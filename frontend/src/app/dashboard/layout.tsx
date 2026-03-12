@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import { Usuario } from "@/types";
 import Icon from "@/components/Icon";
 import "./dashboard.css";
@@ -115,7 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
                         return (
-                            <a
+                            <Link
                                 key={item.href}
                                 href={item.href}
                                 onClick={() => setSidebarOpen(false)}
@@ -124,7 +125,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             >
                                 <div className="sidebar-icon"><Icon name={item.icon || "dashboard"} size={20} /></div>
                                 {!isSidebarCollapsed && <span>{item.label}</span>}
-                            </a>
+                            </Link>
                         );
                     })}
                 </nav>
@@ -167,7 +168,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </header>
 
                 {/* Vistas Anidadas */}
-                <div className="page-wrapper page-enter">
+                <div className="page-wrapper">
                     {children}
                 </div>
             </main>
