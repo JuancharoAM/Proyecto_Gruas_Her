@@ -25,11 +25,14 @@ router.get('/', roleCheck(['Administrador', 'Logística']), solicitudesControlle
 // GET /api/solicitudes/mis-servicios - Listar solicitudes del chofer
 router.get('/mis-servicios', roleCheck(['Chofer']), solicitudesController.listarMisServicios);
 
+// GET /api/solicitudes/mis-solicitudes - Listar solicitudes del cliente
+router.get('/mis-solicitudes', roleCheck(['Cliente']), solicitudesController.listarMisSolicitudes);
+
 // GET /api/solicitudes/:id - Detalle de una solicitud
-router.get('/:id', roleCheck(['Administrador', 'Logística', 'Chofer']), solicitudesController.obtenerPorId);
+router.get('/:id', roleCheck(['Administrador', 'Logística', 'Chofer', 'Cliente']), solicitudesController.obtenerPorId);
 
 // POST /api/solicitudes - Crear nueva solicitud
-router.post('/', roleCheck(['Administrador', 'Logística']), solicitudesController.crear);
+router.post('/', roleCheck(['Administrador', 'Logística', 'Cliente']), solicitudesController.crear);
 
 // PUT /api/solicitudes/:id - Editar datos de una solicitud
 router.put('/:id', roleCheck(['Administrador', 'Logística']), solicitudesController.actualizar);

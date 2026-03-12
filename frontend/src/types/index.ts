@@ -127,6 +127,22 @@ export interface DashboardStats {
     };
 }
 
+/** Cliente registrado */
+export interface Cliente {
+    id: number;
+    cedula: string;
+    nombre: string;
+    apellido: string;
+    telefono: string;
+    correo: string;
+    activo: boolean;
+    fecha_registro: string;
+    usuario_id: number | null;
+    usuario_email: string | null;
+    notas: string;
+    total_solicitudes: number;
+}
+
 /** Respuesta genérica de la API */
 export interface ApiResponse<T> {
     success: boolean;

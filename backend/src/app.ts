@@ -24,6 +24,7 @@ import authRoutes from './routes/auth.routes';
 import usuariosRoutes from './routes/usuarios.routes';
 import camionesRoutes from './routes/camiones.routes';
 import solicitudesRoutes from './routes/solicitudes.routes';
+import clientesRoutes from './routes/clientes.routes';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -65,6 +66,7 @@ app.use('/api/auth', authRoutes);           // Autenticación: login, perfil
 app.use('/api/usuarios', usuariosRoutes);   // Gestión de usuarios (Admin)
 app.use('/api/camiones', camionesRoutes);   // Gestión de flota
 app.use('/api/solicitudes', solicitudesRoutes); // Solicitudes de servicio
+app.use('/api/clientes', clientesRoutes);       // Gestión de clientes
 
 // Ruta del dashboard (definida en solicitudes pero montada aquí)
 import { obtenerEstadisticas } from './controllers/solicitudes.controller';

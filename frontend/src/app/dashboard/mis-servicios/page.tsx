@@ -13,19 +13,23 @@ export default function MisServiciosPage() {
 
     useEffect(() => {
         cargarServicios();
+        const intervalo = setInterval(() => cargarServicios(true), 15000);
+        return () => clearInterval(intervalo);
     }, []);
 
-    async function cargarServicios() {
+    async function cargarServicios(silencioso = false) {
         try {
             const res = await listarMisServicios();
             if (res.success && res.data) {
                 setServicios(res.data);
             }
         } catch (error) {
-            console.error(error);
-            alert("Error al cargar los servicios");
+            if (!silencioso) {
+                console.error(error);
+                alert("Error al cargar los servicios");
+            }
         } finally {
-            setLoading(false);
+            if (!silencioso) setLoading(false);
         }
     }
 

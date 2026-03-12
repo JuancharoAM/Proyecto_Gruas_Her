@@ -129,7 +129,7 @@ export default function UsuariosPage() {
                     <h3 className="panel-title">Usuarios del Sistema ({usuarios.length})</h3>
                     <div className="flex gap-1">
                         <button className="btn btn-ghost" onClick={abrirCrearChofer}>
-                            <Icon name="truck" size={18} /> Registrar Chofer
+                            <Icon name="driver" size={18} /> Registrar Chofer
                         </button>
                         <button className="btn btn-primary" onClick={abrirCrear}>
                             <Icon name="add" size={18} /> Nuevo Usuario

@@ -192,6 +192,64 @@ export async function listarServiciosChofer(choferId: number): Promise<Solicitud
 }
 
 /**
+ * Obtiene la lista de solicitudes creadas por un usuario con rol Cliente.
+ * Busca por el campo creado_por que corresponde al userId del cliente.
+ *
+ * @param userId - ID del usuario cliente autenticado
+ * @returns Array de solicitudes del cliente
+ */
+export async function listarSolicitudesCliente(userId: number): Promise<Solicitud[]> {
+    const pool = await getPool();
+
+    const result = await pool.request()
+        .input('userId', userId)
+        .query(`
+            SELECT
+                s.id, s.numero_servicio,
+                s.cliente_nombre, s.cliente_telefono, s.cliente_email,
+                s.ubicacion_origen, s.ubicacion_destino,
+                s.descripcion_problema, s.tipo_servicio,
+                s.estado, s.prioridad,
+                s.camion_id, c.placa AS camion_placa,
+                s.chofer_id, uch.nombre AS chofer_nombre,
+                s.fecha_solicitud, s.fecha_asignacion,
+                s.fecha_inicio_servicio, s.fecha_finalizacion,
+                s.creado_por, ucr.nombre AS creador_nombre,
+                s.notas_internas
+            FROM solicitudes s
+            LEFT JOIN camiones c ON s.camion_id = c.id
+            LEFT JOIN usuarios uch ON s.chofer_id = uch.id
+            INNER JOIN usuarios ucr ON s.creado_por = ucr.id
+            WHERE s.creado_por = @userId
+            ORDER BY s.fecha_solicitud DESC
+        `);
+
+    return result.recordset;
+}
+
+/**
+ * Verifica si un usuario cliente tiene una solicitud activa (en curso).
+ * Estados activos: Pendiente, Asignada, En camino, Atendiendo.
+ *
+ * @param userId - ID del usuario cliente
+ * @returns true si tiene una solicitud activa
+ */
+export async function clienteTieneSolicitudActiva(userId: number): Promise<boolean> {
+    const pool = await getPool();
+
+    const result = await pool.request()
+        .input('userId', userId)
+        .query(`
+            SELECT COUNT(*) AS activas
+            FROM solicitudes
+            WHERE creado_por = @userId
+              AND estado IN ('Pendiente', 'Asignada', 'En camino', 'Atendiendo')
+        `);
+
+    return result.recordset[0].activas > 0;
+}
+
+/**
  * Obtiene una solicitud específica por su ID.
  * 
  * @param id - ID de la solicitud

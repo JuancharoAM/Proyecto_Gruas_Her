@@ -378,7 +378,7 @@ export default function ChoferesAdminPage() {
                     className={`tab ${tabActiva === "choferes" ? "tab-active" : ""}`}
                     onClick={() => setTabActiva("choferes")}
                 >
-                    <Icon name="users" size={16} /> Choferes
+                    <Icon name="driver" size={16} /> Choferes
                 </button>
                 <button
                     className={`tab ${tabActiva === "servicios" ? "tab-active" : ""}`}
@@ -510,7 +510,7 @@ export default function ChoferesAdminPage() {
                     ) : (
                         /* No hay ningun chofer registrado */
                         <div className="text-center text-muted" style={{ padding: "40px" }}>
-                            <Icon name="users" size={40} />
+                            <Icon name="driver" size={40} />
                             <p className="mt-1">No hay choferes registrados.</p>
                             <button className="btn btn-primary btn-sm mt-2" onClick={abrirCrearChofer}>
                                 <Icon name="add" size={16} /> Registrar primero
@@ -571,7 +571,7 @@ export default function ChoferesAdminPage() {
                                                         color: "var(--text-muted)",
                                                     }}
                                                 >
-                                                    <Icon name="users" size={18} />
+                                                    <Icon name="driver" size={18} />
                                                 </div>
                                                 <div>
                                                     <div style={{ fontWeight: 600, fontSize: "14px" }}>{chofer.nombre}</div>
