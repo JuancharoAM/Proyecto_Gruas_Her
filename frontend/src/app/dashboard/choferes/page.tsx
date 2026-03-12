@@ -19,6 +19,7 @@ import {
     listarCamiones,
     crearChoferDirecto,
     actualizarUsuario,
+    actualizarCamion,
     desactivarUsuario,
     activarUsuario,
     actualizarEstadoSolicitud,
@@ -65,7 +66,7 @@ export default function ChoferesAdminPage() {
 
     // Formularios
     const [formCrear, setFormCrear] = useState({ nombre: "", email: "", password: "" });
-    const [formEditar, setFormEditar] = useState({ nombre: "", email: "", password: "" });
+    const [formEditar, setFormEditar] = useState({ nombre: "", email: "", password: "", camion_asignado_id: "" });
 
     // Mensajes al usuario
     const [mensaje, setMensaje] = useState("");
@@ -169,6 +170,17 @@ export default function ChoferesAdminPage() {
 
     // ======================== Utilidades ========================
 
+    /** Mapa de camion_id → nombre del chofer al que está asignado (excluyendo el chofer que se edita) */
+    const camionAsignadoA = useMemo(() => {
+        const mapa: Record<number, string> = {};
+        camiones.forEach(c => {
+            if (c.chofer_asignado_id && (!choferEditando || c.chofer_asignado_id !== choferEditando.id)) {
+                mapa[c.id] = c.chofer_nombre || "Otro chofer";
+            }
+        });
+        return mapa;
+    }, [camiones, choferEditando]);
+
     /** Muestra un mensaje de exito que se auto-limpia despues de 3 segundos */
     function mostrarMensaje(texto: string) {
         setMensaje(texto);
@@ -217,10 +229,12 @@ export default function ChoferesAdminPage() {
      */
     function abrirEditarChofer(chofer: UsuarioCompleto) {
         setChoferEditando(chofer);
+        const gruaActual = gruaPorChofer[chofer.id];
         setFormEditar({
             nombre: chofer.nombre,
             email: chofer.email,
             password: "",
+            camion_asignado_id: gruaActual?.id.toString() || "",
         });
         setError("");
         setModalEditarAbierto(true);
@@ -252,14 +266,36 @@ export default function ChoferesAdminPage() {
 
         try {
             const res = await actualizarUsuario(choferEditando.id, datos);
-            if (res.success) {
-                mostrarMensaje("Chofer actualizado exitosamente.");
-                setModalEditarAbierto(false);
-                setChoferEditando(null);
-                cargarDatos();
-            } else {
+            if (!res.success) {
                 setError(res.message || "Error al actualizar chofer.");
+                return;
             }
+
+            // Manejar cambio de grúa asignada
+            const gruaAnterior = gruaPorChofer[choferEditando.id];
+            const nuevaGruaId = formEditar.camion_asignado_id ? parseInt(formEditar.camion_asignado_id) : null;
+            const gruaAnteriorId = gruaAnterior?.id || null;
+
+            if (nuevaGruaId !== gruaAnteriorId) {
+                // Desasignar de la grúa anterior
+                if (gruaAnteriorId) {
+                    await actualizarCamion(gruaAnteriorId, { chofer_asignado_id: null });
+                }
+                // Asignar a la nueva grúa
+                if (nuevaGruaId) {
+                    const resGrua = await actualizarCamion(nuevaGruaId, { chofer_asignado_id: choferEditando.id });
+                    if (!resGrua.success) {
+                        setError(resGrua.message || "Error al asignar grúa.");
+                        cargarDatos();
+                        return;
+                    }
+                }
+            }
+
+            mostrarMensaje("Chofer actualizado exitosamente.");
+            setModalEditarAbierto(false);
+            setChoferEditando(null);
+            cargarDatos();
         } catch {
             setError("Error de conexión.");
         }
@@ -749,6 +785,24 @@ export default function ChoferesAdminPage() {
                             <span className="text-muted" style={{ fontSize: "12px", marginTop: "4px", display: "block" }}>
                                 Solo se actualizará si escribes una nueva contraseña.
                             </span>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Grúa Asignada</label>
+                            <select
+                                className="form-select"
+                                value={formEditar.camion_asignado_id}
+                                onChange={e => setFormEditar({ ...formEditar, camion_asignado_id: e.target.value })}
+                            >
+                                <option value="">— Sin asignar —</option>
+                                {camiones.map(c => {
+                                    const asignadoA = camionAsignadoA[c.id];
+                                    return (
+                                        <option key={c.id} value={c.id} disabled={!!asignadoA}>
+                                            {c.placa} — {c.tipo_grua_nombre} ({c.marca} {c.modelo}){asignadoA ? ` (Chofer: ${asignadoA})` : ""}
+                                        </option>
+                                    );
+                                })}
+                            </select>
                         </div>
 
                         <div className="modal-footer">
