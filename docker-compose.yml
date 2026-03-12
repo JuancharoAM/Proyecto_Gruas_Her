@@ -1,0 +1,113 @@
+# =============================================================================
+# Docker Compose V2 - Sistema Grúas Heredianas
+# =============================================================================
+# Este archivo define los 3 servicios del sistema:
+#   - frontend: Aplicación Next.js (puerto 3006)
+#   - backend:  API REST Node.js + Express (puerto 4000)
+#   - sqlserver: Base de datos SQL Server 2022 (puerto 1433)
+#
+# Uso:
+#   docker compose up -d          # Levantar todos los servicios
+#   docker compose down           # Detener todos los servicios
+#   docker compose logs -f        # Ver logs en tiempo real
+#   docker compose up --build     # Reconstruir y levantar
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # SQL Server 2022 - Base de datos principal
+  # ---------------------------------------------------------------------------
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: gruas_sqlserver
+    environment:
+      ACCEPT_EULA: "Y"                          # Aceptar la licencia de SQL Server
+      MSSQL_SA_PASSWORD: "GruasHer2026_Strong!"  # Contraseña del usuario SA
+      MSSQL_PID: "Express"                       # Edición Express (gratuita)
+    # Iniciar SQL Server y luego ejecutar el script de inicialización
+    command: >
+      bash -c "
+      /opt/mssql/bin/sqlservr &
+      echo 'Esperando a SQL Server...' &&
+      sleep 15 &&
+      for i in 1 2 3 4 5 6 7 8 9 10; do
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"GruasHer2026_Strong!\" -Q 'SELECT 1' -C -No > /dev/null 2>&1 && break
+        echo \"Intento $$i...\" && sleep 3
+      done &&
+      echo 'Ejecutando init.sql...' &&
+      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"GruasHer2026_Strong!\" -i /scripts/init.sql -C -No &&
+      echo 'BD inicializada correctamente.' &&
+      wait
+      "
+    ports:
+      - "1435:1433"                              # Exponer puerto de SQL Server (1435 en host)
+    volumes:
+      - sqlserver_data:/var/opt/mssql            # Persistir datos de la BD
+      - ./database:/scripts                      # Scripts de inicialización
+    networks:
+      - gruas_network
+    restart: unless-stopped
+    healthcheck:
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "GruasHer2026_Strong!" -Q "SELECT 1" -C -No || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  # Backend - API REST (Node.js + Express + TypeScript)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gruas_backend
+    environment:
+      DB_SERVER: sqlserver                       # Nombre del servicio de BD en la red Docker
+      DB_PORT: 1433
+      DB_DATABASE: gruas_heredianas
+      DB_USER: sa
+      DB_PASSWORD: "GruasHer2026_Strong!"
+      JWT_SECRET: "gruas_heredianas_jwt_secret_2026"
+      PORT: 4000
+      NODE_ENV: production
+    ports:
+      - "4000:4000"                              # Exponer API REST
+    depends_on:
+      sqlserver:
+        condition: service_healthy               # Esperar a que SQL Server esté listo
+    networks:
+      - gruas_network
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Frontend - Aplicación Next.js
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gruas_frontend
+    environment:
+      NODE_ENV: production
+    ports:
+      - "3006:3006"                              # Exponer frontend
+    depends_on:
+      - backend
+    networks:
+      - gruas_network
+    restart: unless-stopped
+
+# =============================================================================
+# Red interna para comunicación entre contenedores
+# =============================================================================
+networks:
+  gruas_network:
+    driver: bridge
+
+# =============================================================================
+# Volúmenes persistentes
+# =============================================================================
+volumes:
+  sqlserver_data:
+    driver: local

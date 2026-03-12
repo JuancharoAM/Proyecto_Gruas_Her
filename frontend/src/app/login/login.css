@@ -1,0 +1,153 @@
+/**
+ * ============================================================================
+ * Estilos de la Página de Login
+ * ============================================================================
+ * Diseño centrado con fondo degradado y tarjeta de login limpia.
+ * ============================================================================
+ */
+
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Fondo con degradado líquido que cubre toda la pantalla */
+.login-bg {
+    position: fixed;
+    inset: 0;
+    /* Efecto "liquid glass": gradientes radiales múltiples sobre fondo crema */
+    background-color: #FAF3E1;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(250, 129, 18, 0.4) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(245, 158, 11, 0.4) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(250, 129, 18, 0.3) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(253, 224, 71, 0.4) 0px, transparent 50%);
+    background-size: 200% 200%;
+    animation: liquidBackground 30s ease infinite;
+    z-index: 0;
+}
+
+[data-theme="dark"] .login-bg {
+    background-color: #1a1a1a;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(250, 129, 18, 0.25) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.2) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(250, 129, 18, 0.15) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+}
+
+@keyframes liquidBackground {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Toggle de tema en el login — esquina superior derecha */
+.login-theme-toggle {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    color: #ffffff;
+    transition: all var(--transition);
+}
+
+.login-theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 40px;
+    position: relative;
+    z-index: 1;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.login-logo {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary);
+    color: var(--text-inverse);
+    border-radius: var(--radius-md);
+}
+
+.login-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.login-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.login-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+    font-size: 15px;
+    margin-top: 8px;
+}
+
+.login-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.login-footer {
+    font-size: 12px;
+}
+
+/* ============================================================================
+   RESPONSIVE — Login móvil
+   ============================================================================ */
+@media (max-width: 480px) {
+    .login-container {
+        padding: 12px;
+    }
+
+    .login-card {
+        padding: 24px 20px;
+        max-width: 100%;
+    }
+
+    .login-title {
+        font-size: 20px;
+    }
+
+    .login-header {
+        margin-bottom: 24px;
+    }
+
+    .login-theme-toggle {
+        top: 16px;
+        right: 16px;
+    }
+}

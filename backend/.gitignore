@@ -1,0 +1,4 @@
+# Archivos a ignorar en control de versiones
+node_modules/
+dist/
+*.log
