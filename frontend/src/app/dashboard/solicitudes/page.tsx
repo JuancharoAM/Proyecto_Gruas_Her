@@ -183,10 +183,22 @@ export default function SolicitudesPage() {
         return mapa;
     }, [camionesDisponibles]);
 
-    /** Cuando se selecciona un camión, auto-seleccionar su chofer asignado */
+    /** Mapa de chofer_id → estado del servicio activo (si tiene uno no finalizado/cancelado) */
+    const choferOcupado = useMemo(() => {
+        const mapa: Record<number, string> = {};
+        solicitudes.forEach(s => {
+            if (s.chofer_id && (s.estado === "Asignada" || s.estado === "En camino" || s.estado === "Atendiendo")) {
+                mapa[s.chofer_id] = s.estado;
+            }
+        });
+        return mapa;
+    }, [solicitudes]);
+
+    /** Cuando se selecciona un camión, auto-seleccionar su chofer asignado (solo si no está ocupado) */
     function handleCamionChange(camionId: number) {
         const choferAsignado = choferPorCamion[camionId] || 0;
-        setAsignarForm({ camion_id: camionId, chofer_id: choferAsignado });
+        const estaOcupado = choferAsignado ? !!choferOcupado[choferAsignado] : false;
+        setAsignarForm({ camion_id: camionId, chofer_id: estaOcupado ? 0 : choferAsignado });
     }
 
     async function handleAsignar() {
@@ -562,9 +574,14 @@ export default function SolicitudesPage() {
                             <select className="form-select" value={asignarForm.chofer_id}
                                 onChange={e => setAsignarForm({ ...asignarForm, chofer_id: parseInt(e.target.value) })}>
                                 <option value={0}>— Seleccione un chofer —</option>
-                                {choferes.map(ch => (
-                                    <option key={ch.id} value={ch.id}>{ch.nombre}</option>
-                                ))}
+                                {choferes.map(ch => {
+                                    const estadoActivo = choferOcupado[ch.id];
+                                    return (
+                                        <option key={ch.id} value={ch.id} disabled={!!estadoActivo}>
+                                            {ch.nombre}{estadoActivo ? ` (Ocupado: ${estadoActivo})` : ""}
+                                        </option>
+                                    );
+                                })}
                             </select>
                             {asignarForm.camion_id > 0 && choferPorCamion[asignarForm.camion_id] && (
                                 <span className="text-muted" style={{ fontSize: "12px", marginTop: "4px", display: "block" }}>

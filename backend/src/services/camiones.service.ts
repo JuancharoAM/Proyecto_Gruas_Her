@@ -137,6 +137,17 @@ export async function crearCamion(datos: CrearCamionDTO): Promise<Camion> {
         throw new Error('Ya existe un camión con esa placa registrada.');
     }
 
+    // Verificar que el chofer no esté asignado a otro camión
+    if (datos.chofer_asignado_id) {
+        const choferOcupado = await pool.request()
+            .input('chofer_check', datos.chofer_asignado_id)
+            .query('SELECT id, placa FROM camiones WHERE chofer_asignado_id = @chofer_check');
+
+        if (choferOcupado.recordset.length > 0) {
+            throw new Error(`El chofer ya está asignado al camión ${choferOcupado.recordset[0].placa}. Desasígnelo primero.`);
+        }
+    }
+
     // Insertar el nuevo camión
     const result = await pool.request()
         .input('placa', datos.placa)
@@ -174,6 +185,18 @@ export async function crearCamion(datos: CrearCamionDTO): Promise<Camion> {
  */
 export async function actualizarCamion(id: number, datos: ActualizarCamionDTO): Promise<Camion | null> {
     const pool = await getPool();
+
+    // Verificar que el chofer no esté asignado a otro camión
+    if (datos.chofer_asignado_id !== undefined && datos.chofer_asignado_id !== null) {
+        const choferOcupado = await pool.request()
+            .input('chofer_check', datos.chofer_asignado_id)
+            .input('camion_id', id)
+            .query('SELECT id, placa FROM camiones WHERE chofer_asignado_id = @chofer_check AND id != @camion_id');
+
+        if (choferOcupado.recordset.length > 0) {
+            throw new Error(`El chofer ya está asignado al camión ${choferOcupado.recordset[0].placa}. Desasígnelo primero.`);
+        }
+    }
 
     // Construir la consulta dinámicamente
     const campos: string[] = [];

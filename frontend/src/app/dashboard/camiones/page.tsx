@@ -8,20 +8,21 @@
  * ============================================================================
  */
 
-import { useEffect, useState } from "react";
-import { listarCamiones, crearCamion, actualizarCamion, listarTiposGrua } from "@/lib/api";
-import { Camion, TipoGrua } from "@/types";
+import { useEffect, useState, useMemo } from "react";
+import { listarCamiones, crearCamion, actualizarCamion, listarTiposGrua, listarUsuarios } from "@/lib/api";
+import { Camion, TipoGrua, UsuarioCompleto } from "@/types";
 import Icon from "@/components/Icon";
 
 export default function CamionesPage() {
     const [camiones, setCamiones] = useState<Camion[]>([]);
     const [tiposGrua, setTiposGrua] = useState<TipoGrua[]>([]);
+    const [choferes, setChoferes] = useState<UsuarioCompleto[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalAbierto, setModalAbierto] = useState(false);
     const [editando, setEditando] = useState<Camion | null>(null);
     const [form, setForm] = useState({
         placa: "", marca: "", modelo: "", anio: "", color: "",
-        tipo_grua_id: "", kilometraje: "", capacidad_toneladas: "", notas: "",
+        tipo_grua_id: "", kilometraje: "", capacidad_toneladas: "", chofer_asignado_id: "", notas: "",
     });
     const [mensaje, setMensaje] = useState("");
     const [error, setError] = useState("");
@@ -29,20 +30,32 @@ export default function CamionesPage() {
     async function cargarDatos() {
         setLoading(true);
         try {
-            const [resCamiones, resTipos] = await Promise.all([listarCamiones(), listarTiposGrua()]);
+            const [resCamiones, resTipos, resUsuarios] = await Promise.all([listarCamiones(), listarTiposGrua(), listarUsuarios()]);
             if (resCamiones.success && resCamiones.data) setCamiones(resCamiones.data);
             if (resTipos.success && resTipos.data) setTiposGrua(resTipos.data);
+            if (resUsuarios.success && resUsuarios.data) setChoferes(resUsuarios.data.filter(u => u.rol_nombre === "Chofer" && u.activo));
         } catch { setError("Error al cargar datos."); }
         setLoading(false);
     }
 
     useEffect(() => { cargarDatos(); }, []);
 
+    /** Mapa de chofer_id → placa del camión al que ya está asignado (excluyendo el que se edita) */
+    const choferAsignadoA = useMemo(() => {
+        const mapa: Record<number, string> = {};
+        camiones.forEach(c => {
+            if (c.chofer_asignado_id && (!editando || c.id !== editando.id)) {
+                mapa[c.chofer_asignado_id] = c.placa;
+            }
+        });
+        return mapa;
+    }, [camiones, editando]);
+
     function abrirModalCrear() {
         setEditando(null);
         setForm({ placa: "", marca: "", modelo: "", anio: "", color: "",
             tipo_grua_id: tiposGrua[0]?.id.toString() || "", kilometraje: "0",
-            capacidad_toneladas: "", notas: "" });
+            capacidad_toneladas: "", chofer_asignado_id: "", notas: "" });
         setError(""); setModalAbierto(true);
     }
 
@@ -54,6 +67,7 @@ export default function CamionesPage() {
             tipo_grua_id: camion.tipo_grua_id?.toString() || "",
             kilometraje: camion.kilometraje?.toString() || "0",
             capacidad_toneladas: camion.capacidad_toneladas?.toString() || "",
+            chofer_asignado_id: camion.chofer_asignado_id?.toString() || "",
             notas: camion.notas || "",
         });
         setError(""); setModalAbierto(true);
@@ -70,6 +84,7 @@ export default function CamionesPage() {
             tipo_grua_id: parseInt(form.tipo_grua_id),
             kilometraje: parseFloat(form.kilometraje) || 0,
             capacidad_toneladas: form.capacidad_toneladas ? parseFloat(form.capacidad_toneladas) : null,
+            chofer_asignado_id: form.chofer_asignado_id ? parseInt(form.chofer_asignado_id) : null,
             notas: form.notas,
         };
         try {
@@ -201,6 +216,21 @@ export default function CamionesPage() {
                                 <input className="form-input" type="number" step="0.1" value={form.capacidad_toneladas}
                                     onChange={e => setForm({ ...form, capacidad_toneladas: e.target.value })} />
                             </div>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Chofer Asignado</label>
+                            <select className="form-select" value={form.chofer_asignado_id}
+                                onChange={e => setForm({ ...form, chofer_asignado_id: e.target.value })}>
+                                <option value="">— Sin asignar —</option>
+                                {choferes.map(ch => {
+                                    const asignadoA = choferAsignadoA[ch.id];
+                                    return (
+                                        <option key={ch.id} value={ch.id} disabled={!!asignadoA}>
+                                            {ch.nombre}{asignadoA ? ` (Asignado a ${asignadoA})` : ""}
+                                        </option>
+                                    );
+                                })}
+                            </select>
                         </div>
                         <div className="form-group">
                             <label className="form-label">Notas</label>
