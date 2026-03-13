@@ -32,6 +32,7 @@
 
 .sidebar-collapsed {
     width: 72px;
+    align-items: center;
 }
 
 /* Header del sidebar */
@@ -41,6 +42,11 @@
     gap: 12px;
     padding: 0 8px;
     margin-bottom: 32px;
+}
+
+.sidebar-collapsed .sidebar-header {
+    justify-content: center;
+    padding: 0;
 }
 
 .sidebar-logo {
@@ -83,6 +89,11 @@
     white-space: nowrap;
 }
 
+.sidebar-collapsed .sidebar-link {
+    justify-content: center;
+    padding: 10px;
+}
+
 .sidebar-link:hover {
     background: rgba(74, 144, 217, 0.08);
     color: var(--text-primary);
@@ -112,6 +123,14 @@
     color: var(--text-muted);
     transition: all 0.2s ease;
     margin-top: 8px;
+}
+
+.sidebar-collapsed .sidebar-toggle {
+    align-self: center;
+}
+
+.sidebar-collapsed .sidebar-nav {
+    width: 100%;
 }
 
 .sidebar-toggle:hover {

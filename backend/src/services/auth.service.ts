@@ -81,7 +81,7 @@ export async function loginUsuario(email: string, password: string): Promise<Log
 
     // Verificar que la cuenta esté activa
     if (!usuario.activo) {
-        return null;
+        throw new Error('USUARIO_INACTIVO');
     }
 
     // Comparar la contraseña proporcionada con el hash almacenado

@@ -25,7 +25,9 @@ const menuItems = [
       roles: ["Administrador", "Logística"] },
     { href: "/dashboard/camiones", label: "Flota", icon: "truck",
       roles: ["Administrador", "Logística"] },
-    { href: "/dashboard/choferes", label: "Choferes", icon: "users",
+    { href: "/dashboard/choferes", label: "Choferes", icon: "driver",
+      roles: ["Administrador", "Logística"] },
+    { href: "/dashboard/clientes", label: "Clientes", icon: "contact",
       roles: ["Administrador", "Logística"] },
     { href: "/dashboard/mantenimiento", label: "Mantenimiento", icon: "wrench",
       roles: ["Administrador", "Técnico"] },
@@ -33,6 +35,8 @@ const menuItems = [
       roles: ["Administrador"] },
     { href: "/dashboard/mis-servicios", label: "Mis Servicios", icon: "route",
       roles: ["Chofer"] },
+    { href: "/dashboard/mis-solicitudes", label: "Mis Solicitudes", icon: "solicitudes",
+      roles: ["Cliente"] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

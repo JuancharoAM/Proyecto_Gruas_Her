@@ -30,7 +30,19 @@ export async function login(req: Request, res: Response): Promise<void> {
         }
 
         // Intentar autenticar al usuario
-        const resultado = await authService.loginUsuario(email, password);
+        let resultado;
+        try {
+            resultado = await authService.loginUsuario(email, password);
+        } catch (authError: any) {
+            if (authError.message === 'USUARIO_INACTIVO') {
+                res.status(403).json({
+                    success: false,
+                    message: 'Su cuenta se encuentra inactiva. Contacte al administrador del sistema.',
+                });
+                return;
+            }
+            throw authError;
+        }
 
         if (!resultado) {
             res.status(401).json({

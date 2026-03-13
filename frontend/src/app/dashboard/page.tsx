@@ -17,6 +17,17 @@ export default function DashboardPage() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
 
+    async function cargarDatos(silencioso = false) {
+        try {
+            const response = await obtenerEstadisticas();
+            if (response.success && response.data) setStats(response.data);
+        } catch (error) {
+            if (!silencioso) console.error("Error al cargar estadísticas:", error);
+        } finally {
+            if (!silencioso) setLoading(false);
+        }
+    }
+
     useEffect(() => {
         const userData = localStorage.getItem("usuario");
         if (userData) {
@@ -26,17 +37,9 @@ export default function DashboardPage() {
                 return;
             }
         }
-        async function cargarDatos() {
-            try {
-                const response = await obtenerEstadisticas();
-                if (response.success && response.data) setStats(response.data);
-            } catch (error) {
-                console.error("Error al cargar estadísticas:", error);
-            } finally {
-                setLoading(false);
-            }
-        }
         cargarDatos();
+        const intervalo = setInterval(() => cargarDatos(true), 15000);
+        return () => clearInterval(intervalo);
     }, []);
 
     function getBadgeClass(estado: string): string {

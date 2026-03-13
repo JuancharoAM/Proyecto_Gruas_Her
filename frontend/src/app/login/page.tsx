@@ -48,12 +48,14 @@ export default function LoginPage() {
         try {
             const response = await login(email, password);
             if (response.success && response.data) {
-                const isChofer = response.data.usuario.rol === "Chofer";
+                const rol = response.data.usuario.rol;
                 localStorage.setItem("token", response.data.token);
                 localStorage.setItem("usuario", JSON.stringify(response.data.usuario));
-                
-                if (isChofer) {
+
+                if (rol === "Chofer") {
                     router.push("/dashboard/mis-servicios");
+                } else if (rol === "Cliente") {
+                    router.push("/dashboard/mis-solicitudes");
                 } else {
                     router.push("/dashboard");
                 }

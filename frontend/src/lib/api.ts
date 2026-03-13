@@ -10,13 +10,18 @@
  * ============================================================================
  */
 
-import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Mantenimiento, Combustible } from '@/types';
+import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Mantenimiento, Combustible, Cliente } from '@/types';
 
-/** URL base del backend API (evaluado dinámicamente) */
+/**
+ * URL base del backend API.
+ * Se resuelve siempre en el navegador usando window.location.hostname
+ * para que funcione desde cualquier IP de la red local.
+ */
 function getApiUrl(): string {
-    if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-    if (typeof window !== 'undefined') return `http://${window.location.hostname}:4000`;
-    return 'http://localhost:4000';
+    if (typeof window === 'undefined') return '';
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (envUrl) return envUrl;
+    return 'http://' + window.location.hostname + ':4000';
 }
 
 /**
@@ -225,12 +230,66 @@ export async function listarMisServicios(): Promise<ApiResponse<Solicitud[]>> {
     return fetchAPI<Solicitud[]>('/api/solicitudes/mis-servicios');
 }
 
+/** Listar solicitudes del cliente actual */
+export async function listarMisSolicitudes(): Promise<ApiResponse<Solicitud[]>> {
+    return fetchAPI<Solicitud[]>('/api/solicitudes/mis-solicitudes');
+}
+
 /** Actualizar estado de una solicitud (para choferes) */
 export async function actualizarEstadoSolicitud(id: number, estado: string): Promise<ApiResponse<Solicitud>> {
     return fetchAPI<Solicitud>(`/api/solicitudes/${id}/estado`, {
         method: 'PUT',
         body: JSON.stringify({ estado }),
     });
+}
+
+// ============================================================================
+// CLIENTES
+// ============================================================================
+
+/** Listar todos los clientes */
+export async function listarClientes(): Promise<ApiResponse<Cliente[]>> {
+    return fetchAPI<Cliente[]>('/api/clientes');
+}
+
+/** Obtener un cliente por ID */
+export async function obtenerCliente(id: number): Promise<ApiResponse<Cliente>> {
+    return fetchAPI<Cliente>(`/api/clientes/${id}`);
+}
+
+/** Crear un nuevo cliente */
+export async function crearCliente(datos: {
+    cedula: string; nombre: string; apellido: string;
+    telefono?: string; correo?: string; notas?: string;
+    crear_usuario?: boolean; password?: string;
+}): Promise<ApiResponse<Cliente>> {
+    return fetchAPI<Cliente>('/api/clientes', {
+        method: 'POST',
+        body: JSON.stringify(datos),
+    });
+}
+
+/** Actualizar un cliente */
+export async function actualizarCliente(id: number, datos: Partial<Cliente>): Promise<ApiResponse<Cliente>> {
+    return fetchAPI<Cliente>(`/api/clientes/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(datos),
+    });
+}
+
+/** Desactivar un cliente */
+export async function desactivarCliente(id: number): Promise<ApiResponse<void>> {
+    return fetchAPI<void>(`/api/clientes/${id}`, { method: 'DELETE' });
+}
+
+/** Activar un cliente */
+export async function activarCliente(id: number): Promise<ApiResponse<Cliente>> {
+    return fetchAPI<Cliente>(`/api/clientes/${id}/activar`, { method: 'PUT' });
+}
+
+/** Obtener historial de solicitudes de un cliente */
+export async function obtenerHistorialCliente(id: number): Promise<ApiResponse<Solicitud[]>> {
+    return fetchAPI<Solicitud[]>(`/api/clientes/${id}/historial`);
 }
 
 // ============================================================================

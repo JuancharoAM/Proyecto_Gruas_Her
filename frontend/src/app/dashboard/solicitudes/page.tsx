@@ -70,16 +70,20 @@ export default function SolicitudesPage() {
 
     // ======================== Carga de datos ========================
 
-    async function cargarSolicitudes() {
-        setLoading(true);
+    async function cargarSolicitudes(silencioso = false) {
+        if (!silencioso) setLoading(true);
         try {
             const res = await listarSolicitudes(filtroActual);
             if (res.success && res.data) setSolicitudes(res.data);
-        } catch { setError("Error al cargar solicitudes."); }
-        setLoading(false);
+        } catch { if (!silencioso) setError("Error al cargar solicitudes."); }
+        if (!silencioso) setLoading(false);
     }
 
-    useEffect(() => { cargarSolicitudes(); }, [filtroActual]);
+    useEffect(() => {
+        cargarSolicitudes();
+        const intervalo = setInterval(() => cargarSolicitudes(true), 15000);
+        return () => clearInterval(intervalo);
+    }, [filtroActual]);
 
     function mostrarMensaje(texto: string) {
         setMensaje(texto);

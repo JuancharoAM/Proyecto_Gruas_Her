@@ -43,6 +43,21 @@ export async function listarMisServicios(req: Request, res: Response): Promise<v
 }
 
 /**
+ * GET /api/solicitudes/mis-solicitudes
+ * Obtiene la lista de solicitudes creadas por el cliente autenticado.
+ */
+export async function listarMisSolicitudes(req: Request, res: Response): Promise<void> {
+    try {
+        const userId = req.user!.userId;
+        const solicitudes = await solicitudesService.listarSolicitudesCliente(userId);
+        res.json({ success: true, data: solicitudes });
+    } catch (error) {
+        console.error('Error al listar solicitudes del cliente:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener sus solicitudes.' });
+    }
+}
+
+/**
  * GET /api/solicitudes/:id
  * Obtiene el detalle completo de una solicitud.
  */
@@ -79,6 +94,18 @@ export async function crear(req: Request, res: Response): Promise<void> {
                 message: 'Los campos cliente_nombre y ubicacion_origen son requeridos.',
             });
             return;
+        }
+
+        // Si es un cliente, validar que no tenga una solicitud activa
+        if (req.user!.rol === 'Cliente') {
+            const tieneActiva = await solicitudesService.clienteTieneSolicitudActiva(req.user!.userId);
+            if (tieneActiva) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Ya tiene una solicitud en curso. Debe esperar a que finalice o sea cancelada antes de crear otra.',
+                });
+                return;
+            }
         }
 
         // Agregar el ID del usuario que crea la solicitud

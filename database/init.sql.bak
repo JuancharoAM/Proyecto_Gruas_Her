@@ -62,29 +62,6 @@ END
 GO
 
 -- ============================================================================
--- TABLA: clientes
--- Registra los clientes de la empresa. Un cliente puede tener opcionalmente
--- un usuario vinculado para acceder al portal y solicitar servicios.
--- ============================================================================
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'clientes')
-BEGIN
-    CREATE TABLE clientes (
-        id              INT PRIMARY KEY IDENTITY(1,1),  -- Identificador único
-        cedula          VARCHAR(30) NOT NULL UNIQUE,     -- Número de cédula o identificación
-        nombre          VARCHAR(100) NOT NULL,           -- Nombre del cliente
-        apellido        VARCHAR(100) NOT NULL,           -- Apellido del cliente
-        telefono        VARCHAR(20),                     -- Teléfono de contacto
-        correo          VARCHAR(100),                    -- Correo electrónico
-        activo          BIT DEFAULT 1,                   -- Si el cliente está activo
-        fecha_registro  DATETIME DEFAULT GETDATE(),      -- Fecha de registro en el sistema
-        usuario_id      INT NULL,                        -- FK al usuario vinculado (acceso al portal)
-        notas           TEXT NULL,                        -- Notas adicionales sobre el cliente
-        CONSTRAINT FK_clientes_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-    );
-END
-GO
-
--- ============================================================================
 -- TABLA: tipos_grua
 -- Catálogo de los diferentes tipos de grúa que maneja la empresa.
 -- Ejemplos: Plataforma, Arrastre, Elevación.
@@ -174,14 +151,6 @@ BEGIN
 END
 GO
 
--- Agregar columna cliente_id a solicitudes (para vincular con la tabla clientes)
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('solicitudes') AND name = 'cliente_id')
-BEGIN
-    ALTER TABLE solicitudes ADD cliente_id INT NULL;
-    ALTER TABLE solicitudes ADD CONSTRAINT FK_solicitudes_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id);
-END
-GO
-
 -- ============================================================================
 -- DATOS SEMILLA (SEED DATA)
 -- Inserta los datos iniciales necesarios para que el sistema funcione.
@@ -195,14 +164,6 @@ BEGIN
         ('Chofer', 'Puede ver sus servicios asignados, actualizar estados y registrar información de viajes.'),
         ('Logística', 'Gestiona solicitudes de servicio, asigna grúas y coordina operaciones.'),
         ('Técnico', 'Registra mantenimientos e inspecciones técnicas de las unidades.');
-END
-GO
-
--- Insertar rol de Cliente (para acceso al portal de solicitudes)
-IF NOT EXISTS (SELECT * FROM roles WHERE nombre = 'Cliente')
-BEGIN
-    INSERT INTO roles (nombre, descripcion) VALUES
-        ('Cliente', 'Puede solicitar servicios de grúa y consultar el estado de sus solicitudes.');
 END
 GO
 
@@ -223,54 +184,6 @@ IF NOT EXISTS (SELECT * FROM usuarios WHERE email = 'admin@gruasheredianas.com')
 BEGIN
     INSERT INTO usuarios (nombre, email, password_hash, rol_id) VALUES
         ('Administrador', 'admin@gruasheredianas.com', '$2a$10$I1BIEUXcG12WPEX8m89PCe22o3/yRjz41OvswvmH.sCCI0l6EjQFO', 1);
-END
-GO
-
--- ============================================================================
--- TABLA: mantenimientos
--- Registra los mantenimientos realizados a cada camión de la flota.
--- Tipos: 'Preventivo' (programado) y 'Correctivo' (por falla).
--- ============================================================================
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'mantenimientos')
-BEGIN
-    CREATE TABLE mantenimientos (
-        id                    INT PRIMARY KEY IDENTITY(1,1),
-        camion_id             INT NOT NULL,
-        tipo                  VARCHAR(30) NOT NULL,              -- 'Preventivo' / 'Correctivo'
-        estado                VARCHAR(20) DEFAULT 'En proceso',  -- 'En proceso' / 'Completado'
-        descripcion           TEXT NOT NULL,
-        fecha_mantenimiento   DATETIME DEFAULT GETDATE(),
-        fecha_completado      DATETIME NULL,
-        costo                 DECIMAL(12,2) DEFAULT 0,
-        kilometraje_actual    DECIMAL(10,2),
-        fecha_proximo         DATETIME NULL,
-        realizado_por         INT NOT NULL,
-        notas                 TEXT NULL,
-        CONSTRAINT FK_mantenimientos_camion FOREIGN KEY (camion_id) REFERENCES camiones(id),
-        CONSTRAINT FK_mantenimientos_usuario FOREIGN KEY (realizado_por) REFERENCES usuarios(id)
-    );
-END
-GO
-
--- ============================================================================
--- TABLA: combustible
--- Registra las cargas de combustible de cada camión.
--- Permite rastrear consumo, costos y estaciones frecuentes.
--- ============================================================================
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'combustible')
-BEGIN
-    CREATE TABLE combustible (
-        id                INT PRIMARY KEY IDENTITY(1,1),
-        camion_id         INT NOT NULL,
-        fecha             DATETIME DEFAULT GETDATE(),
-        litros            DECIMAL(8,2) NOT NULL,
-        costo             DECIMAL(10,2) NOT NULL,
-        kilometraje       DECIMAL(10,2),
-        estacion          VARCHAR(100),
-        registrado_por    INT NOT NULL,
-        CONSTRAINT FK_combustible_camion FOREIGN KEY (camion_id) REFERENCES camiones(id),
-        CONSTRAINT FK_combustible_usuario FOREIGN KEY (registrado_por) REFERENCES usuarios(id)
-    );
 END
 GO
 

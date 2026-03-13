@@ -94,6 +94,18 @@ const icons: Record<string, React.ReactNode> = {
     route: (
         <path d="M19 15v4H5v-4h14m2-2H3v8h18v-8zM17 8H7V6h10v2m2-4H5v6h14V4z" />
     ),
+    driver: (
+        <>
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
+            <circle cx="12" cy="12" r="2" />
+            <line x1="12" y1="3.5" x2="12" y2="10" stroke="currentColor" strokeWidth="2" />
+            <line x1="4.8" y1="16.2" x2="10.3" y2="13" stroke="currentColor" strokeWidth="2" />
+            <line x1="19.2" y1="16.2" x2="13.7" y2="13" stroke="currentColor" strokeWidth="2" />
+        </>
+    ),
+    contact: (
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+    ),
     play: (
         <path d="M8 5v14l11-7z" />
     ),

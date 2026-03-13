@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Configuración de variables de entorno públicas
+    // Variables de entorno públicas (sin fallback para que se resuelva dinámicamente en el navegador)
     env: {
-        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
+        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '',
     },
     // Modo standalone para Docker
     output: 'standalone',
