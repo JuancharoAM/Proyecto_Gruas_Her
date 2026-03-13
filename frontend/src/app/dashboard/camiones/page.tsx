@@ -9,11 +9,13 @@
  */
 
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { listarCamiones, crearCamion, actualizarCamion, listarTiposGrua, listarUsuarios } from "@/lib/api";
 import { Camion, TipoGrua, UsuarioCompleto } from "@/types";
 import Icon from "@/components/Icon";
 
 export default function CamionesPage() {
+    const router = useRouter();
     const [camiones, setCamiones] = useState<Camion[]>([]);
     const [tiposGrua, setTiposGrua] = useState<TipoGrua[]>([]);
     const [choferes, setChoferes] = useState<UsuarioCompleto[]>([]);
@@ -140,9 +142,13 @@ export default function CamionesPage() {
                                         <td>{c.kilometraje?.toLocaleString() || "0"} km</td>
                                         <td>{c.chofer_nombre || "Sin asignar"}</td>
                                         <td><span className={`badge ${getBadgeClass(c.estado)}`}>{c.estado}</span></td>
-                                        <td>
+                                        <td style={{ display: "flex", gap: "4px" }}>
                                             <button className="btn btn-ghost btn-sm" onClick={() => abrirModalEditar(c)}>
                                                 <Icon name="edit" size={14} /> Editar
+                                            </button>
+                                            <button className="btn btn-ghost btn-sm" onClick={() => router.push(`/dashboard/mantenimiento?camion_id=${c.id}`)}
+                                                title="Ver mantenimiento">
+                                                <Icon name="wrench" size={14} />
                                             </button>
                                         </td>
                                     </tr>

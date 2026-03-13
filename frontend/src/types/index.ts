@@ -127,6 +127,38 @@ export interface DashboardStats {
     };
 }
 
+/** Registro de mantenimiento */
+export interface Mantenimiento {
+    id: number;
+    camion_id: number;
+    camion_placa: string;
+    tipo: string;
+    estado: string;
+    descripcion: string;
+    fecha_mantenimiento: string;
+    fecha_completado: string | null;
+    costo: number;
+    kilometraje_actual: number;
+    fecha_proximo: string | null;
+    realizado_por: number;
+    realizado_por_nombre: string;
+    notas: string;
+}
+
+/** Registro de carga de combustible */
+export interface Combustible {
+    id: number;
+    camion_id: number;
+    camion_placa: string;
+    fecha: string;
+    litros: number;
+    costo: number;
+    kilometraje: number;
+    estacion: string;
+    registrado_por: number;
+    registrado_por_nombre: string;
+}
+
 /** Respuesta genérica de la API */
 export interface ApiResponse<T> {
     success: boolean;
