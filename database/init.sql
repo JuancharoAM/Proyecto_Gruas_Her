@@ -226,5 +226,53 @@ BEGIN
 END
 GO
 
+-- ============================================================================
+-- TABLA: mantenimientos
+-- Registra los mantenimientos realizados a cada camión de la flota.
+-- Tipos: 'Preventivo' (programado) y 'Correctivo' (por falla).
+-- ============================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'mantenimientos')
+BEGIN
+    CREATE TABLE mantenimientos (
+        id                    INT PRIMARY KEY IDENTITY(1,1),
+        camion_id             INT NOT NULL,
+        tipo                  VARCHAR(30) NOT NULL,              -- 'Preventivo' / 'Correctivo'
+        estado                VARCHAR(20) DEFAULT 'En proceso',  -- 'En proceso' / 'Completado'
+        descripcion           TEXT NOT NULL,
+        fecha_mantenimiento   DATETIME DEFAULT GETDATE(),
+        fecha_completado      DATETIME NULL,
+        costo                 DECIMAL(12,2) DEFAULT 0,
+        kilometraje_actual    DECIMAL(10,2),
+        fecha_proximo         DATETIME NULL,
+        realizado_por         INT NOT NULL,
+        notas                 TEXT NULL,
+        CONSTRAINT FK_mantenimientos_camion FOREIGN KEY (camion_id) REFERENCES camiones(id),
+        CONSTRAINT FK_mantenimientos_usuario FOREIGN KEY (realizado_por) REFERENCES usuarios(id)
+    );
+END
+GO
+
+-- ============================================================================
+-- TABLA: combustible
+-- Registra las cargas de combustible de cada camión.
+-- Permite rastrear consumo, costos y estaciones frecuentes.
+-- ============================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'combustible')
+BEGIN
+    CREATE TABLE combustible (
+        id                INT PRIMARY KEY IDENTITY(1,1),
+        camion_id         INT NOT NULL,
+        fecha             DATETIME DEFAULT GETDATE(),
+        litros            DECIMAL(8,2) NOT NULL,
+        costo             DECIMAL(10,2) NOT NULL,
+        kilometraje       DECIMAL(10,2),
+        estacion          VARCHAR(100),
+        registrado_por    INT NOT NULL,
+        CONSTRAINT FK_combustible_camion FOREIGN KEY (camion_id) REFERENCES camiones(id),
+        CONSTRAINT FK_combustible_usuario FOREIGN KEY (registrado_por) REFERENCES usuarios(id)
+    );
+END
+GO
+
 PRINT 'Base de datos inicializada correctamente.';
 GO

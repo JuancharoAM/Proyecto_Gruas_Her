@@ -10,7 +10,7 @@
  * ============================================================================
  */
 
-import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Cliente } from '@/types';
+import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Mantenimiento, Combustible, Cliente } from '@/types';
 
 /**
  * URL base del backend API.
@@ -299,4 +299,63 @@ export async function obtenerHistorialCliente(id: number): Promise<ApiResponse<S
 /** Obtener estadísticas para el dashboard */
 export async function obtenerEstadisticas(): Promise<ApiResponse<DashboardStats>> {
     return fetchAPI<DashboardStats>('/api/dashboard/stats');
+}
+
+// ============================================================================
+// MANTENIMIENTOS
+// ============================================================================
+
+/** Listar mantenimientos (opcionalmente por camion) */
+export async function listarMantenimientos(camionId?: number): Promise<ApiResponse<Mantenimiento[]>> {
+    const query = camionId ? `?camion_id=${camionId}` : '';
+    return fetchAPI<Mantenimiento[]>(`/api/mantenimientos${query}`);
+}
+
+/** Crear un nuevo mantenimiento */
+export async function crearMantenimiento(datos: Partial<Mantenimiento>): Promise<ApiResponse<Mantenimiento>> {
+    return fetchAPI<Mantenimiento>('/api/mantenimientos', {
+        method: 'POST',
+        body: JSON.stringify(datos),
+    });
+}
+
+/** Actualizar un mantenimiento */
+export async function actualizarMantenimiento(id: number, datos: Partial<Mantenimiento>): Promise<ApiResponse<Mantenimiento>> {
+    return fetchAPI<Mantenimiento>(`/api/mantenimientos/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(datos),
+    });
+}
+
+/** Completar un mantenimiento (liberar grua) */
+export async function completarMantenimiento(id: number): Promise<ApiResponse<Mantenimiento>> {
+    return fetchAPI<Mantenimiento>(`/api/mantenimientos/${id}/completar`, { method: 'PUT' });
+}
+
+/** Eliminar un mantenimiento */
+export async function eliminarMantenimiento(id: number): Promise<ApiResponse<void>> {
+    return fetchAPI<void>(`/api/mantenimientos/${id}`, { method: 'DELETE' });
+}
+
+// ============================================================================
+// COMBUSTIBLE
+// ============================================================================
+
+/** Listar registros de combustible (opcionalmente por camion) */
+export async function listarCombustible(camionId?: number): Promise<ApiResponse<Combustible[]>> {
+    const query = camionId ? `?camion_id=${camionId}` : '';
+    return fetchAPI<Combustible[]>(`/api/combustible${query}`);
+}
+
+/** Registrar una carga de combustible */
+export async function crearCombustible(datos: Partial<Combustible>): Promise<ApiResponse<Combustible>> {
+    return fetchAPI<Combustible>('/api/combustible', {
+        method: 'POST',
+        body: JSON.stringify(datos),
+    });
+}
+
+/** Eliminar un registro de combustible */
+export async function eliminarCombustible(id: number): Promise<ApiResponse<void>> {
+    return fetchAPI<void>(`/api/combustible/${id}`, { method: 'DELETE' });
 }

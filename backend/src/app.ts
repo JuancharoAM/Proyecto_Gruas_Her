@@ -24,6 +24,8 @@ import authRoutes from './routes/auth.routes';
 import usuariosRoutes from './routes/usuarios.routes';
 import camionesRoutes from './routes/camiones.routes';
 import solicitudesRoutes from './routes/solicitudes.routes';
+import mantenimientosRoutes from './routes/mantenimientos.routes';
+import combustibleRoutes from './routes/combustible.routes';
 import clientesRoutes from './routes/clientes.routes';
 
 // Cargar variables de entorno
@@ -66,6 +68,8 @@ app.use('/api/auth', authRoutes);           // Autenticación: login, perfil
 app.use('/api/usuarios', usuariosRoutes);   // Gestión de usuarios (Admin)
 app.use('/api/camiones', camionesRoutes);   // Gestión de flota
 app.use('/api/solicitudes', solicitudesRoutes); // Solicitudes de servicio
+app.use('/api/mantenimientos', mantenimientosRoutes); // Mantenimientos de flota
+app.use('/api/combustible', combustibleRoutes);       // Cargas de combustible
 app.use('/api/clientes', clientesRoutes);       // Gestión de clientes
 
 // Ruta del dashboard (definida en solicitudes pero montada aquí)

@@ -36,7 +36,9 @@ services:
       done &&
       echo 'Ejecutando init.sql...' &&
       /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"GruasHer2026_Strong!\" -i /scripts/init.sql -C -No &&
-      echo 'BD inicializada correctamente.' &&
+      echo 'Ejecutando seed_test_data.sql...' &&
+      /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"GruasHer2026_Strong!\" -i /scripts/seed_test_data.sql -C -No &&
+      echo 'BD inicializada con datos de prueba.' &&
       wait
       "
     ports:
