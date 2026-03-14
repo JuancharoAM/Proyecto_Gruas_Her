@@ -15,6 +15,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Usuario } from "@/types";
 import Icon from "@/components/Icon";
+import NotificacionesDropdown from "@/components/NotificacionesDropdown";
 import "./dashboard.css";
 
 /** Elementos del menú con iconos SVG */
@@ -157,6 +158,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
 
                     <div className="header-right">
+                        <NotificacionesDropdown />
                         <button className="btn btn-ghost btn-sm btn-icon" onClick={toggleTheme} title={theme === "light" ? "Activar modo oscuro" : "Activar modo claro"}>
                             <Icon name={theme === "light" ? "moon" : "sun"} size={18} />
                         </button>

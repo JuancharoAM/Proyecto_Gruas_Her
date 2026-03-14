@@ -194,24 +194,40 @@ Una vez levantado, acceder a:
 
 ## 📦 Módulos del Sistema
 
-### Fase 1 y 2 (Implementadas)
+### Fase 1 — Base del Sistema (Implementada)
 
 | Módulo | Descripción |
 |--------|-------------|
-| **Autenticación** | Login con JWT, manejo de sesiones, roles de usuario |
+| **Autenticación** | Login con JWT, manejo de sesiones, roles de usuario (Administrador, Chofer, Logística, Técnico, Cliente) |
 | **Dashboard** | Métricas generales: solicitudes activas, flota disponible, servicios del día |
 | **Gestión de Flota** | CRUD de camiones/grúas, estados operativos, asignación de choferes |
-| **Solicitudes de Servicio** | Registro de solicitudes, asignación de grúa y chofer, seguimiento por estados |
+| **Solicitudes de Servicio** | Registro, asignación de grúa/chofer, seguimiento por estados, reasignación de grúa/chofer en solicitudes activas |
 | **Gestión de Usuarios** | CRUD de usuarios, asignación de roles, activar/desactivar cuentas |
 | **Gestión de Choferes** | Listado de choferes, monitoreo, registro rápido y forzado de estados de servicio |
-| **Mis Servicios (Chofer)**| Panel Mobile-First para gestionar solicitudes y transiciones (`En camino`, `Atendiendo`, `Finalizada`) |
+| **Mis Servicios (Chofer)** | Panel Mobile-First para gestionar solicitudes y transiciones (`En camino`, `Atendiendo`, `Finalizada`) |
+| **Gestión de Clientes** | CRUD de clientes, historial de servicios |
+
+### Fase 2 — Mantenimiento y Combustible (Implementada)
+
+| Módulo | Descripción |
+|--------|-------------|
+| **Mantenimiento de Equipos** | Registro de mantenimientos preventivos/correctivos, bloqueo automático de grúas en mantenimiento |
+| **Control de Combustible** | Registro de cargas de combustible, historial por camión |
+
+### Fase 3 — Notificaciones (Implementada)
+
+| Módulo | Descripción |
+|--------|-------------|
+| **Notificaciones Internas** | Sistema de notificaciones en tiempo real (polling 30s), badge con conteo de no leídas, marcar como leídas, limpiar todas. Notificaciones automáticas en asignación, reasignación y cambio de estado de solicitudes. Panel responsive (pantalla completa en móvil). |
 
 ### Fases Futuras
 
 | Fase | Módulos |
 |------|---------|
-| 3 | Mantenimiento de equipos, Facturación, Ubicación GPS en mapa |
-| 4 | Notificaciones automáticas, Evaluación del servicio |
+| 4 | Facturación y cobros |
+| 5 | Evaluación del servicio (calificaciones) |
+| 6 | Ubicación GPS en mapa |
+| 7 | Inventario, Reportes avanzados, Alertas del sistema |
 
 ---
 
@@ -245,14 +261,27 @@ Una vez levantado, acceder a:
 |--------|------|-------------|-------|
 | GET | `/api/solicitudes` | Listar solicitudes | Admin, Logística |
 | POST | `/api/solicitudes` | Crear solicitud | Admin, Logística |
-| PUT | `/api/solicitudes/:id/asignar` | Asignar grúa | Admin, Logística |
+| PUT | `/api/solicitudes/:id` | Actualizar solicitud | Admin, Logística |
+| PUT | `/api/solicitudes/:id/asignar` | Asignar grúa y chofer | Admin, Logística |
+| PUT | `/api/solicitudes/:id/reasignar` | Reasignar grúa y chofer | Admin, Logística |
+| PUT | `/api/solicitudes/:id/estado` | Actualizar estado servicio | Chofer, Admin, Logística |
+| DELETE | `/api/solicitudes/:id` | Eliminar solicitud | Admin |
 
 ### Choferes y Estados
 | Método | Ruta | Descripción | Roles |
 |--------|------|-------------|-------|
 | POST | `/api/usuarios/choferes` | Crear chofer | Admin, Logística |
 | GET | `/api/solicitudes/mis-servicios` | Listar servicios del chofer | Chofer |
-| PUT | `/api/solicitudes/:id/estado` | Actualizar estado servicio | Chofer, Admin, Logística |
+
+### Notificaciones
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| GET | `/api/notificaciones` | Listar notificaciones del usuario | Autenticado |
+| GET | `/api/notificaciones/no-leidas` | Contar no leídas | Autenticado |
+| PUT | `/api/notificaciones/:id/leer` | Marcar como leída | Autenticado |
+| PUT | `/api/notificaciones/leer-todas` | Marcar todas como leídas | Autenticado |
+| DELETE | `/api/notificaciones/:id` | Eliminar notificación | Autenticado |
+| DELETE | `/api/notificaciones/limpiar` | Eliminar todas | Autenticado |
 
 ### Dashboard
 | Método | Ruta | Descripción | Roles |
@@ -267,11 +296,15 @@ Una vez levantado, acceder a:
 
 | Tabla | Descripción |
 |-------|-------------|
-| `roles` | Roles del sistema (Administrador, Chofer, Logística, Técnico) |
+| `roles` | Roles del sistema (Administrador, Chofer, Logística, Técnico, Cliente) |
 | `usuarios` | Usuarios con credenciales y rol asignado |
 | `tipos_grua` | Catálogo de tipos (Plataforma, Arrastre, Elevación) |
 | `camiones` | Flota de grúas con estado operativo |
 | `solicitudes` | Solicitudes de servicio con ciclo de vida completo |
+| `mantenimientos` | Registro de mantenimientos preventivos y correctivos |
+| `combustible` | Registro de cargas de combustible por camión |
+| `clientes` | Clientes con datos de contacto |
+| `notificaciones` | Notificaciones internas por usuario |
 
 ### Conexión Externa
 

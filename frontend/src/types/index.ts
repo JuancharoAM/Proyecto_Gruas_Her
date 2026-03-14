@@ -175,6 +175,19 @@ export interface Cliente {
     total_solicitudes: number;
 }
 
+/** Notificacion del sistema */
+export interface Notificacion {
+    id: number;
+    usuario_id: number;
+    titulo: string;
+    mensaje: string;
+    tipo: string;
+    leida: boolean;
+    referencia_tipo: string | null;
+    referencia_id: number | null;
+    fecha_creacion: string;
+}
+
 /** Respuesta genérica de la API */
 export interface ApiResponse<T> {
     success: boolean;

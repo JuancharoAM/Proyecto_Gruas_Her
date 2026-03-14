@@ -10,7 +10,7 @@
  * ============================================================================
  */
 
-import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Mantenimiento, Combustible, Cliente } from '@/types';
+import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Mantenimiento, Combustible, Cliente, Notificacion } from '@/types';
 
 /**
  * URL base del backend API.
@@ -225,6 +225,14 @@ export async function asignarGrua(solicitudId: number, camion_id: number, chofer
     });
 }
 
+/** Reasignar grua y chofer a una solicitud activa */
+export async function reasignarGrua(solicitudId: number, camion_id: number, chofer_id: number): Promise<ApiResponse<Solicitud>> {
+    return fetchAPI<Solicitud>(`/api/solicitudes/${solicitudId}/reasignar`, {
+        method: 'PUT',
+        body: JSON.stringify({ camion_id, chofer_id }),
+    });
+}
+
 /** Listar servicios asignados al chofer actual */
 export async function listarMisServicios(): Promise<ApiResponse<Solicitud[]>> {
     return fetchAPI<Solicitud[]>('/api/solicitudes/mis-servicios');
@@ -358,4 +366,38 @@ export async function crearCombustible(datos: Partial<Combustible>): Promise<Api
 /** Eliminar un registro de combustible */
 export async function eliminarCombustible(id: number): Promise<ApiResponse<void>> {
     return fetchAPI<void>(`/api/combustible/${id}`, { method: 'DELETE' });
+}
+
+// ============================================================================
+// NOTIFICACIONES
+// ============================================================================
+
+/** Listar notificaciones del usuario actual */
+export async function listarNotificaciones(): Promise<ApiResponse<Notificacion[]>> {
+    return fetchAPI<Notificacion[]>('/api/notificaciones');
+}
+
+/** Contar notificaciones no leidas */
+export async function contarNotificacionesNoLeidas(): Promise<ApiResponse<{ total: number }>> {
+    return fetchAPI<{ total: number }>('/api/notificaciones/no-leidas');
+}
+
+/** Marcar una notificacion como leida */
+export async function marcarNotificacionLeida(id: number): Promise<ApiResponse<void>> {
+    return fetchAPI<void>(`/api/notificaciones/${id}/leer`, { method: 'PUT' });
+}
+
+/** Marcar todas las notificaciones como leidas */
+export async function marcarTodasNotificacionesLeidas(): Promise<ApiResponse<void>> {
+    return fetchAPI<void>('/api/notificaciones/leer-todas', { method: 'PUT' });
+}
+
+/** Eliminar una notificacion */
+export async function eliminarNotificacion(id: number): Promise<ApiResponse<void>> {
+    return fetchAPI<void>(`/api/notificaciones/${id}`, { method: 'DELETE' });
+}
+
+/** Limpiar (eliminar) todas las notificaciones del usuario */
+export async function limpiarNotificaciones(): Promise<ApiResponse<void>> {
+    return fetchAPI<void>('/api/notificaciones/limpiar', { method: 'DELETE' });
 }

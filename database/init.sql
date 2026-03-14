@@ -274,5 +274,27 @@ BEGIN
 END
 GO
 
+-- ============================================================================
+-- TABLA: notificaciones
+-- Sistema de notificaciones internas para alertar a los usuarios sobre
+-- eventos relevantes: asignaciones, cambios de estado, mantenimientos, etc.
+-- ============================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'notificaciones')
+BEGIN
+    CREATE TABLE notificaciones (
+        id                INT PRIMARY KEY IDENTITY(1,1),
+        usuario_id        INT NOT NULL,                        -- Usuario destinatario
+        titulo            VARCHAR(200) NOT NULL,               -- Titulo breve
+        mensaje           TEXT NOT NULL,                        -- Mensaje completo
+        tipo              VARCHAR(30) DEFAULT 'info',          -- 'info', 'asignacion', 'estado', 'mantenimiento', 'alerta'
+        leida             BIT DEFAULT 0,                       -- Si fue leida por el usuario
+        referencia_tipo   VARCHAR(50) NULL,                    -- Tipo de entidad referenciada ('solicitud', 'camion', 'mantenimiento')
+        referencia_id     INT NULL,                            -- ID de la entidad referenciada
+        fecha_creacion    DATETIME DEFAULT GETDATE(),
+        CONSTRAINT FK_notificaciones_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    );
+END
+GO
+
 PRINT 'Base de datos inicializada correctamente.';
 GO
