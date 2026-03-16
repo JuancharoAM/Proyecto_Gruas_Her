@@ -40,6 +40,9 @@ router.put('/:id', roleCheck(['Administrador', 'Logística']), solicitudesContro
 // PUT /api/solicitudes/:id/asignar - Asignar grúa a solicitud
 router.put('/:id/asignar', roleCheck(['Administrador', 'Logística']), solicitudesController.asignar);
 
+// PUT /api/solicitudes/:id/reasignar - Reasignar grúa/chofer en solicitud activa
+router.put('/:id/reasignar', roleCheck(['Administrador', 'Logística']), solicitudesController.reasignar);
+
 // PUT /api/solicitudes/:id/estado - Actualizar estado de solicitud
 router.put('/:id/estado', roleCheck(['Administrador', 'Logística', 'Chofer']), solicitudesController.actualizarEstado);
 

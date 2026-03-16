@@ -390,6 +390,83 @@ export async function asignarGrua(solicitudId: number, datos: AsignarGruaDTO): P
 }
 
 /**
+ * Reasigna una grua y/o chofer a una solicitud que ya esta asignada, en camino o atendiendo.
+ *
+ * Proceso:
+ * 1. Verifica que la solicitud este en estado Asignada, En camino o Atendiendo
+ * 2. Libera el camion anterior (si cambia)
+ * 3. Verifica que el nuevo camion este disponible (si cambia)
+ * 4. Asigna el nuevo camion y/o chofer
+ * 5. Pone el nuevo camion en estado 'En servicio'
+ */
+export async function reasignarGrua(solicitudId: number, datos: AsignarGruaDTO): Promise<Solicitud> {
+    const pool = await getPool();
+
+    // Obtener solicitud actual
+    const solicitud = await obtenerSolicitudPorId(solicitudId);
+    if (!solicitud) {
+        throw new Error('Solicitud no encontrada.');
+    }
+
+    const estadosPermitidos = ['Asignada', 'En camino', 'Atendiendo'];
+    if (!estadosPermitidos.includes(solicitud.estado)) {
+        throw new Error(`Solo se puede reasignar en estados: ${estadosPermitidos.join(', ')}. Estado actual: "${solicitud.estado}".`);
+    }
+
+    const cambiaCamion = datos.camion_id !== solicitud.camion_id;
+
+    // Si cambia el camion, verificar que el nuevo este disponible
+    if (cambiaCamion) {
+        const camion = await pool.request()
+            .input('camionId', datos.camion_id)
+            .query('SELECT estado FROM camiones WHERE id = @camionId');
+
+        if (camion.recordset.length === 0) {
+            throw new Error('Camion no encontrado.');
+        }
+        if (camion.recordset[0].estado !== 'Disponible') {
+            throw new Error('El camion seleccionado no esta disponible.');
+        }
+    }
+
+    const transaction = pool.transaction();
+    await transaction.begin();
+
+    try {
+        // Liberar el camion anterior si cambia
+        if (cambiaCamion && solicitud.camion_id) {
+            await transaction.request()
+                .input('camionId', solicitud.camion_id)
+                .query("UPDATE camiones SET estado = 'Disponible' WHERE id = @camionId AND estado = 'En servicio'");
+        }
+
+        // Asignar nuevo camion/chofer
+        await transaction.request()
+            .input('id', solicitudId)
+            .input('camion_id', datos.camion_id)
+            .input('chofer_id', datos.chofer_id)
+            .query(`
+                UPDATE solicitudes
+                SET camion_id = @camion_id, chofer_id = @chofer_id
+                WHERE id = @id
+            `);
+
+        // Poner el nuevo camion en servicio (si cambio)
+        if (cambiaCamion) {
+            await transaction.request()
+                .input('camionId', datos.camion_id)
+                .query("UPDATE camiones SET estado = 'En servicio' WHERE id = @camionId");
+        }
+
+        await transaction.commit();
+        return (await obtenerSolicitudPorId(solicitudId))!;
+    } catch (error) {
+        await transaction.rollback();
+        throw error;
+    }
+}
+
+/**
  * Actualiza el estado de una solicitud a lo largo de su ciclo de vida.
  * Choferes pueden pasar de: Asignada -> En camino -> Atendiendo -> Finalizada
  * 

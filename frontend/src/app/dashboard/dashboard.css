@@ -160,6 +160,8 @@
     padding: 16px 24px;
     margin-bottom: 16px;
     border-radius: var(--radius-lg);
+    position: relative;
+    z-index: 50;
 }
 
 .header-page-title {
@@ -385,6 +387,11 @@ button.sidebar-link {
     cursor: pointer;
     width: 100%;
     text-align: left;
+}
+
+/* Icono de volver (flecha rotada 180deg) */
+.icon-back {
+    transform: rotate(180deg);
 }
 
 /* Overlay oscuro detrás del sidebar móvil */

@@ -173,5 +173,34 @@ BEGIN
 END
 GO
 
+-- ============================================================================
+-- NOTIFICACIONES DE PRUEBA
+-- ============================================================================
+
+-- Notificacion 1: Para el chofer1 (asignacion de servicio)
+IF NOT EXISTS (SELECT * FROM notificaciones WHERE titulo = 'Servicio asignado: SRV-2026-0002' AND usuario_id = (SELECT id FROM usuarios WHERE email = 'chofer1@gruasheredianas.com'))
+BEGIN
+    INSERT INTO notificaciones (usuario_id, titulo, mensaje, tipo, leida, referencia_tipo, referencia_id)
+    VALUES (
+        (SELECT id FROM usuarios WHERE email = 'chofer1@gruasheredianas.com'),
+        'Servicio asignado: SRV-2026-0002',
+        'Se te ha asignado el servicio SRV-2026-0002. Cliente: Laura Solis. Origen: Alajuela, Centro.',
+        'asignacion', 1, 'solicitud',
+        (SELECT id FROM solicitudes WHERE numero_servicio = 'SRV-2026-0002'));
+END
+
+-- Notificacion 2: Para el admin (nueva solicitud pendiente, no leida)
+IF NOT EXISTS (SELECT * FROM notificaciones WHERE titulo = 'Nueva solicitud pendiente: SRV-2026-0001' AND usuario_id = (SELECT id FROM usuarios WHERE email = 'admin@gruasheredianas.com'))
+BEGIN
+    INSERT INTO notificaciones (usuario_id, titulo, mensaje, tipo, leida, referencia_tipo, referencia_id)
+    VALUES (
+        (SELECT id FROM usuarios WHERE email = 'admin@gruasheredianas.com'),
+        'Nueva solicitud pendiente: SRV-2026-0001',
+        'Nueva solicitud de Juan Perez. Origen: San Jose, Barrio Escalante. Requiere asignacion de grua.',
+        'info', 0, 'solicitud',
+        (SELECT id FROM solicitudes WHERE numero_servicio = 'SRV-2026-0001'));
+END
+GO
+
 PRINT 'Datos de prueba insertados correctamente.';
 GO

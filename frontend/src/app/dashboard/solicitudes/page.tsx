@@ -12,7 +12,7 @@
 import { useEffect, useState, useMemo } from "react";
 import {
     listarSolicitudes, crearSolicitud, actualizarSolicitud, eliminarSolicitud,
-    asignarGrua, actualizarEstadoSolicitud, listarCamiones, listarUsuarios,
+    asignarGrua, reasignarGrua, actualizarEstadoSolicitud, listarCamiones, listarUsuarios,
 } from "@/lib/api";
 import { Solicitud, Camion, UsuarioCompleto } from "@/types";
 import Icon from "@/components/Icon";
@@ -29,6 +29,7 @@ export default function SolicitudesPage() {
     const [modalCrear, setModalCrear] = useState(false);
     const [modalEditar, setModalEditar] = useState(false);
     const [modalAsignar, setModalAsignar] = useState(false);
+    const [modalReasignar, setModalReasignar] = useState(false);
     const [modalEstado, setModalEstado] = useState(false);
     const [modalDetalle, setModalDetalle] = useState(false);
 
@@ -51,6 +52,7 @@ export default function SolicitudesPage() {
         descripcion_problema: "", tipo_servicio: "", prioridad: "", notas_internas: "",
     });
     const [asignarForm, setAsignarForm] = useState({ camion_id: 0, chofer_id: 0 });
+    const [reasignarForm, setReasignarForm] = useState({ camion_id: 0, chofer_id: 0 });
     const [nuevoEstado, setNuevoEstado] = useState("");
 
     // Mensajes
@@ -222,6 +224,53 @@ export default function SolicitudesPage() {
         } catch { setError("Error de conexión."); }
     }
 
+    // ======================== Reasignar grúa/chofer ========================
+
+    async function abrirModalReasignar(solicitud: Solicitud) {
+        setSolicitudSel(solicitud);
+        setReasignarForm({ camion_id: solicitud.camion_id || 0, chofer_id: solicitud.chofer_id || 0 });
+        setError("");
+        try {
+            const [resC, resU] = await Promise.all([listarCamiones(), listarUsuarios()]);
+            if (resC.success && resC.data) {
+                // Incluir camiones disponibles + el camión actualmente asignado a esta solicitud
+                const disponiblesOReasignado = resC.data.filter(
+                    c => c.estado === "Disponible" || c.id === solicitud.camion_id
+                );
+                setCamionesDisponibles(disponiblesOReasignado);
+            }
+            if (resU.success && resU.data)
+                setChoferes(resU.data.filter(u => u.rol_nombre === "Chofer" && u.activo));
+        } catch { /* sin acción */ }
+        setModalReasignar(true);
+    }
+
+    function handleReasignarCamionChange(camionId: number) {
+        const choferAsignado = choferPorCamion[camionId] || 0;
+        const estaOcupado = choferAsignado ? !!choferOcupado[choferAsignado] : false;
+        setReasignarForm({ camion_id: camionId, chofer_id: estaOcupado ? 0 : choferAsignado });
+    }
+
+    async function handleReasignar() {
+        if (!solicitudSel || !reasignarForm.camion_id) {
+            setError("Seleccione un camión."); return;
+        }
+        if (!reasignarForm.chofer_id) {
+            setError("Seleccione un chofer para la reasignación."); return;
+        }
+        if (reasignarForm.camion_id === solicitudSel.camion_id && reasignarForm.chofer_id === solicitudSel.chofer_id) {
+            setError("Debe cambiar al menos el camión o el chofer."); return;
+        }
+        try {
+            const res = await reasignarGrua(solicitudSel.id, reasignarForm.camion_id, reasignarForm.chofer_id);
+            if (res.success) {
+                mostrarMensaje("Grúa y chofer reasignados exitosamente.");
+                setModalReasignar(false);
+                cargarSolicitudes();
+            } else { setError(res.message || "Error al reasignar."); }
+        } catch { setError("Error de conexión."); }
+    }
+
     // ======================== Cambiar estado ========================
 
     function abrirModalEstado(s: Solicitud) {
@@ -284,7 +333,7 @@ export default function SolicitudesPage() {
     return (
         <div className="page-enter">
             {mensaje && <div className="alert alert-success">{mensaje}</div>}
-            {error && !modalCrear && !modalEditar && !modalAsignar && !modalEstado && (
+            {error && !modalCrear && !modalEditar && !modalAsignar && !modalReasignar && !modalEstado && (
                 <div className="alert alert-error">{error}</div>
             )}
 
@@ -335,6 +384,11 @@ export default function SolicitudesPage() {
                                                 {s.estado === "Pendiente" && (
                                                     <button className="btn btn-success btn-sm" onClick={() => abrirModalAsignar(s)}>
                                                         <Icon name="assign" size={14} /> Asignar
+                                                    </button>
+                                                )}
+                                                {["Asignada", "En camino", "Atendiendo"].includes(s.estado) && (
+                                                    <button className="btn btn-warning btn-sm" onClick={() => abrirModalReasignar(s)}>
+                                                        <Icon name="assign" size={14} /> Reasignar
                                                     </button>
                                                 )}
                                                 {puedeCambiarEstado(s) && s.estado !== "Pendiente" && (
@@ -602,6 +656,76 @@ export default function SolicitudesPage() {
                             <button className="btn btn-success" onClick={handleAsignar}
                                 disabled={asignarForm.camion_id === 0 || asignarForm.chofer_id === 0}>
                                 Asignar Grúa y Chofer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* Modal: Reasignar Grúa + Chofer                               */}
+            {/* ============================================================ */}
+            {modalReasignar && solicitudSel && (
+                <div className="modal-overlay" onClick={() => setModalReasignar(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Reasignar Grúa — {solicitudSel.numero_servicio}</h3>
+                            <button className="modal-close" onClick={() => setModalReasignar(false)}>
+                                <Icon name="close" size={20} />
+                            </button>
+                        </div>
+                        {error && <div className="alert alert-error">{error}</div>}
+
+                        <div style={{ padding: "12px", background: "var(--bg-subtle)", borderRadius: "8px", marginBottom: "16px", fontSize: "14px" }}>
+                            <div><strong>Cliente:</strong> {solicitudSel.cliente_nombre}</div>
+                            <div><strong>Origen:</strong> {solicitudSel.ubicacion_origen}</div>
+                            <div><strong>Estado:</strong> <span className={`badge ${getBadgeClass(solicitudSel.estado)}`}>{solicitudSel.estado}</span></div>
+                            <div style={{ marginTop: "8px", padding: "8px", background: "var(--color-warning-subtle)", borderRadius: "6px" }}>
+                                <strong>Asignación actual:</strong> Grúa {solicitudSel.camion_placa || "—"} · Chofer {solicitudSel.chofer_nombre || "—"}
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Nueva grúa *</label>
+                            <select className="form-select" value={reasignarForm.camion_id}
+                                onChange={e => handleReasignarCamionChange(parseInt(e.target.value))}>
+                                <option value={0}>— Seleccione una grúa —</option>
+                                {camionesDisponibles.map(c => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.placa} — {c.tipo_grua_nombre} ({c.marca} {c.modelo})
+                                        {c.id === solicitudSel.camion_id ? " [Actual]" : ""}
+                                        {c.chofer_nombre ? ` [Chofer: ${c.chofer_nombre}]` : ""}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Nuevo chofer *</label>
+                            <select className="form-select" value={reasignarForm.chofer_id}
+                                onChange={e => setReasignarForm({ ...reasignarForm, chofer_id: parseInt(e.target.value) })}>
+                                <option value={0}>— Seleccione un chofer —</option>
+                                {choferes.map(ch => {
+                                    const estadoActivo = choferOcupado[ch.id];
+                                    const esActual = ch.id === solicitudSel.chofer_id;
+                                    return (
+                                        <option key={ch.id} value={ch.id} disabled={!!estadoActivo && !esActual}>
+                                            {ch.nombre}{esActual ? " [Actual]" : ""}{estadoActivo && !esActual ? ` (Ocupado: ${estadoActivo})` : ""}
+                                        </option>
+                                    );
+                                })}
+                            </select>
+                        </div>
+
+                        <div className="alert alert-info" style={{ fontSize: "13px" }}>
+                            Al reasignar, la grúa anterior será liberada automáticamente y la nueva será marcada como "En servicio".
+                        </div>
+
+                        <div className="modal-footer">
+                            <button className="btn btn-ghost" onClick={() => setModalReasignar(false)}>Cancelar</button>
+                            <button className="btn btn-warning" onClick={handleReasignar}
+                                disabled={reasignarForm.camion_id === 0 || reasignarForm.chofer_id === 0}>
+                                Confirmar Reasignación
                             </button>
                         </div>
                     </div>

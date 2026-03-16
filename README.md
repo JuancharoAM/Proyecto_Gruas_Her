@@ -72,7 +72,12 @@ Proyecto_Gruas_Her/
 │   │   │   ├── auth.controller.ts
 │   │   │   ├── usuarios.controller.ts
 │   │   │   ├── camiones.controller.ts
-│   │   │   └── solicitudes.controller.ts
+│   │   │   ├── solicitudes.controller.ts
+│   │   │   ├── mantenimientos.controller.ts
+│   │   │   ├── combustible.controller.ts
+│   │   │   ├── clientes.controller.ts
+│   │   │   ├── notificaciones.controller.ts
+│   │   │   └── reportes.controller.ts
 │   │   ├── middleware/
 │   │   │   ├── auth.ts             # Verificación JWT
 │   │   │   └── roleCheck.ts        # Control de acceso por rol
@@ -80,12 +85,22 @@ Proyecto_Gruas_Her/
 │   │   │   ├── auth.routes.ts
 │   │   │   ├── usuarios.routes.ts
 │   │   │   ├── camiones.routes.ts
-│   │   │   └── solicitudes.routes.ts
+│   │   │   ├── solicitudes.routes.ts
+│   │   │   ├── mantenimientos.routes.ts
+│   │   │   ├── combustible.routes.ts
+│   │   │   ├── clientes.routes.ts
+│   │   │   ├── notificaciones.routes.ts
+│   │   │   └── reportes.routes.ts
 │   │   └── services/               # Lógica de negocio y queries SQL
 │   │       ├── auth.service.ts
 │   │       ├── usuarios.service.ts
 │   │       ├── camiones.service.ts
-│   │       └── solicitudes.service.ts
+│   │       ├── solicitudes.service.ts
+│   │       ├── mantenimientos.service.ts
+│   │       ├── combustible.service.ts
+│   │       ├── clientes.service.ts
+│   │       ├── notificaciones.service.ts
+│   │       └── reportes.service.ts
 │   ├── Dockerfile
 │   ├── .dockerignore
 │   └── package.json
@@ -107,10 +122,23 @@ Proyecto_Gruas_Her/
 │   │   │       │   └── page.tsx
 │   │   │       ├── camiones/       # Gestión de flota
 │   │   │       │   └── page.tsx
-│   │   │       └── usuarios/       # Gestión de usuarios
+│   │   │       ├── usuarios/       # Gestión de usuarios
+│   │   │       │   └── page.tsx
+│   │   │       ├── choferes/       # Gestión de choferes
+│   │   │       │   └── page.tsx
+│   │   │       ├── clientes/       # Gestión de clientes
+│   │   │       │   └── page.tsx
+│   │   │       ├── mantenimiento/  # Mantenimiento y combustible
+│   │   │       │   └── page.tsx
+│   │   │       ├── reportes/       # Reportes y estadísticas
+│   │   │       │   └── page.tsx
+│   │   │       ├── mis-servicios/  # Panel del chofer
+│   │   │       │   └── page.tsx
+│   │   │       └── mis-solicitudes/ # Panel del cliente
 │   │   │           └── page.tsx
 │   │   ├── components/
-│   │   │   └── Icon.tsx            # Componente de iconos SVG
+│   │   │   ├── Icon.tsx            # Componente de iconos SVG
+│   │   │   └── NotificacionesDropdown.tsx # Campana de notificaciones
 │   │   ├── lib/
 │   │   │   └── api.ts              # Wrapper HTTP para el backend
 │   │   └── types/
@@ -194,24 +222,48 @@ Una vez levantado, acceder a:
 
 ## 📦 Módulos del Sistema
 
-### Fase 1 y 2 (Implementadas)
+### Fase 1 — Base del Sistema (Implementada)
 
 | Módulo | Descripción |
 |--------|-------------|
-| **Autenticación** | Login con JWT, manejo de sesiones, roles de usuario |
+| **Autenticación** | Login con JWT, manejo de sesiones, roles de usuario (Administrador, Chofer, Logística, Técnico, Cliente) |
 | **Dashboard** | Métricas generales: solicitudes activas, flota disponible, servicios del día |
 | **Gestión de Flota** | CRUD de camiones/grúas, estados operativos, asignación de choferes |
-| **Solicitudes de Servicio** | Registro de solicitudes, asignación de grúa y chofer, seguimiento por estados |
+| **Solicitudes de Servicio** | Registro, asignación de grúa/chofer, seguimiento por estados, reasignación de grúa/chofer en solicitudes activas |
 | **Gestión de Usuarios** | CRUD de usuarios, asignación de roles, activar/desactivar cuentas |
 | **Gestión de Choferes** | Listado de choferes, monitoreo, registro rápido y forzado de estados de servicio |
-| **Mis Servicios (Chofer)**| Panel Mobile-First para gestionar solicitudes y transiciones (`En camino`, `Atendiendo`, `Finalizada`) |
+| **Mis Servicios (Chofer)** | Panel Mobile-First para gestionar solicitudes y transiciones (`En camino`, `Atendiendo`, `Finalizada`) |
+| **Gestión de Clientes** | CRUD de clientes, historial de servicios |
+
+### Fase 2 — Mantenimiento y Combustible (Implementada)
+
+| Módulo | Descripción |
+|--------|-------------|
+| **Mantenimiento de Equipos** | Registro de mantenimientos preventivos/correctivos, bloqueo automático de grúas en mantenimiento |
+| **Control de Combustible** | Registro de cargas de combustible, historial por camión |
+
+### Fase 3 — Notificaciones (Implementada)
+
+| Módulo | Descripción |
+|--------|-------------|
+| **Notificaciones Internas** | Sistema de notificaciones en tiempo real (polling 30s), badge con conteo de no leídas, marcar como leídas, limpiar todas. Notificaciones automáticas en asignación, reasignación y cambio de estado de solicitudes. Panel responsive (pantalla completa en móvil). |
+
+### Fase 4 — Reportes y Estadísticas (Implementada)
+
+| Módulo | Descripción |
+|--------|-------------|
+| **Reportes de Solicitudes** | Resumen por estado, tendencia mensual (últimos 6 meses), distribución por tipo de servicio y prioridad, listado de solicitudes recientes. Filtro por rango de fechas. Exportación CSV. |
+| **Reportes de Flota** | Estado de la flota, distribución por tipo de grúa, mantenimientos recientes, consumo de combustible por camión. Exportación CSV. |
+| **Reportes Operativos** | Servicios por chofer, tiempo promedio de resolución, solicitudes por día de la semana, costos de mantenimiento y combustible mensual. Exportación CSV. |
 
 ### Fases Futuras
 
 | Fase | Módulos |
 |------|---------|
-| 3 | Mantenimiento de equipos, Facturación, Ubicación GPS en mapa |
-| 4 | Notificaciones automáticas, Evaluación del servicio |
+| 5 | Facturación y cobros |
+| 6 | Evaluación del servicio (calificaciones) |
+| 7 | Ubicación GPS en mapa |
+| 8 | Inventario, Alertas del sistema |
 
 ---
 
@@ -245,14 +297,55 @@ Una vez levantado, acceder a:
 |--------|------|-------------|-------|
 | GET | `/api/solicitudes` | Listar solicitudes | Admin, Logística |
 | POST | `/api/solicitudes` | Crear solicitud | Admin, Logística |
-| PUT | `/api/solicitudes/:id/asignar` | Asignar grúa | Admin, Logística |
+| PUT | `/api/solicitudes/:id` | Actualizar solicitud | Admin, Logística |
+| PUT | `/api/solicitudes/:id/asignar` | Asignar grúa y chofer | Admin, Logística |
+| PUT | `/api/solicitudes/:id/reasignar` | Reasignar grúa y chofer | Admin, Logística |
+| PUT | `/api/solicitudes/:id/estado` | Actualizar estado servicio | Chofer, Admin, Logística |
+| DELETE | `/api/solicitudes/:id` | Eliminar solicitud | Admin |
 
 ### Choferes y Estados
 | Método | Ruta | Descripción | Roles |
 |--------|------|-------------|-------|
 | POST | `/api/usuarios/choferes` | Crear chofer | Admin, Logística |
 | GET | `/api/solicitudes/mis-servicios` | Listar servicios del chofer | Chofer |
-| PUT | `/api/solicitudes/:id/estado` | Actualizar estado servicio | Chofer, Admin, Logística |
+
+### Notificaciones
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| GET | `/api/notificaciones` | Listar notificaciones del usuario | Autenticado |
+| GET | `/api/notificaciones/no-leidas` | Contar no leídas | Autenticado |
+| PUT | `/api/notificaciones/:id/leer` | Marcar como leída | Autenticado |
+| PUT | `/api/notificaciones/leer-todas` | Marcar todas como leídas | Autenticado |
+| DELETE | `/api/notificaciones/:id` | Eliminar notificación | Autenticado |
+| DELETE | `/api/notificaciones/limpiar` | Eliminar todas | Autenticado |
+
+### Mantenimientos
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| GET | `/api/mantenimientos` | Listar mantenimientos | Admin, Técnico |
+| POST | `/api/mantenimientos` | Registrar mantenimiento | Admin, Técnico |
+| PUT | `/api/mantenimientos/:id` | Actualizar mantenimiento | Admin, Técnico |
+
+### Combustible
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| GET | `/api/combustible` | Listar cargas de combustible | Admin, Logística |
+| POST | `/api/combustible` | Registrar carga | Admin, Logística |
+
+### Clientes
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| GET | `/api/clientes` | Listar clientes | Admin, Logística |
+| POST | `/api/clientes` | Crear cliente | Admin, Logística |
+| PUT | `/api/clientes/:id` | Actualizar cliente | Admin, Logística |
+| GET | `/api/clientes/:id/historial` | Historial de servicios | Admin, Logística |
+
+### Reportes
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| GET | `/api/reportes/solicitudes` | Reporte de solicitudes (filtro por fechas) | Admin, Logística |
+| GET | `/api/reportes/flota` | Reporte de flota | Admin, Logística |
+| GET | `/api/reportes/operativo` | Reporte operativo | Admin, Logística |
 
 ### Dashboard
 | Método | Ruta | Descripción | Roles |
@@ -267,11 +360,15 @@ Una vez levantado, acceder a:
 
 | Tabla | Descripción |
 |-------|-------------|
-| `roles` | Roles del sistema (Administrador, Chofer, Logística, Técnico) |
+| `roles` | Roles del sistema (Administrador, Chofer, Logística, Técnico, Cliente) |
 | `usuarios` | Usuarios con credenciales y rol asignado |
 | `tipos_grua` | Catálogo de tipos (Plataforma, Arrastre, Elevación) |
 | `camiones` | Flota de grúas con estado operativo |
 | `solicitudes` | Solicitudes de servicio con ciclo de vida completo |
+| `mantenimientos` | Registro de mantenimientos preventivos y correctivos |
+| `combustible` | Registro de cargas de combustible por camión |
+| `clientes` | Clientes con datos de contacto |
+| `notificaciones` | Notificaciones internas por usuario |
 
 ### Conexión Externa
 

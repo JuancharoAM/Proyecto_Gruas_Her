@@ -27,6 +27,8 @@ import solicitudesRoutes from './routes/solicitudes.routes';
 import mantenimientosRoutes from './routes/mantenimientos.routes';
 import combustibleRoutes from './routes/combustible.routes';
 import clientesRoutes from './routes/clientes.routes';
+import notificacionesRoutes from './routes/notificaciones.routes';
+import reportesRoutes from './routes/reportes.routes';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -71,6 +73,8 @@ app.use('/api/solicitudes', solicitudesRoutes); // Solicitudes de servicio
 app.use('/api/mantenimientos', mantenimientosRoutes); // Mantenimientos de flota
 app.use('/api/combustible', combustibleRoutes);       // Cargas de combustible
 app.use('/api/clientes', clientesRoutes);       // Gestión de clientes
+app.use('/api/notificaciones', notificacionesRoutes); // Notificaciones internas
+app.use('/api/reportes', reportesRoutes);             // Reportes y estadísticas
 
 // Ruta del dashboard (definida en solicitudes pero montada aquí)
 import { obtenerEstadisticas } from './controllers/solicitudes.controller';
