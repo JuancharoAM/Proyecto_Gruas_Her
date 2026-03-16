@@ -188,6 +188,36 @@ export interface Notificacion {
     fecha_creacion: string;
 }
 
+/** Reporte de solicitudes */
+export interface ReporteSolicitudes {
+    resumen: {
+        total: number; pendientes: number; asignadas: number; en_camino: number;
+        atendiendo: number; finalizadas: number; canceladas: number; tasa_finalizacion: number;
+    };
+    por_mes: { mes: string; total: number; finalizadas: number; canceladas: number }[];
+    por_tipo_servicio: { tipo: string; cantidad: number }[];
+    por_prioridad: { prioridad: string; cantidad: number }[];
+    recientes: { numero_servicio: string; cliente_nombre: string; estado: string; prioridad: string; fecha_solicitud: string; camion_placa: string | null; chofer_nombre: string | null }[];
+}
+
+/** Reporte de flota */
+export interface ReporteFlota {
+    resumen: { total: number; disponibles: number; en_servicio: number; en_mantenimiento: number; fuera_servicio: number };
+    por_tipo: { tipo: string; cantidad: number; disponibles: number }[];
+    por_estado: { estado: string; cantidad: number }[];
+    mantenimientos_recientes: { camion_placa: string; tipo: string; estado: string; descripcion: string; costo: number; fecha: string }[];
+    combustible_por_camion: { camion_placa: string; marca: string; modelo: string; total_litros: number; total_costo: number; cargas: number }[];
+}
+
+/** Reporte operativo */
+export interface ReporteOperativo {
+    servicios_por_chofer: { chofer_nombre: string; total: number; finalizados: number; cancelados: number; activos: number }[];
+    tiempo_promedio_resolucion: { mes: string; promedio_horas: number; total_servicios: number }[];
+    solicitudes_por_dia_semana: { dia: string; dia_num: number; cantidad: number }[];
+    costos_mantenimiento_mensual: { mes: string; total_costo: number; cantidad: number }[];
+    costos_combustible_mensual: { mes: string; total_litros: number; total_costo: number; cargas: number }[];
+}
+
 /** Respuesta genérica de la API */
 export interface ApiResponse<T> {
     success: boolean;

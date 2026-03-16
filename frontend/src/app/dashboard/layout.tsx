@@ -32,6 +32,8 @@ const menuItems = [
       roles: ["Administrador", "Logística"] },
     { href: "/dashboard/mantenimiento", label: "Mantenimiento", icon: "wrench",
       roles: ["Administrador", "Técnico"] },
+    { href: "/dashboard/reportes", label: "Reportes", icon: "chart",
+      roles: ["Administrador", "Logística"] },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: "users",
       roles: ["Administrador"] },
     { href: "/dashboard/mis-servicios", label: "Mis Servicios", icon: "route",

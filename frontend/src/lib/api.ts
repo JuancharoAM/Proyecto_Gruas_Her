@@ -10,7 +10,7 @@
  * ============================================================================
  */
 
-import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Mantenimiento, Combustible, Cliente, Notificacion } from '@/types';
+import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Mantenimiento, Combustible, Cliente, Notificacion, ReporteSolicitudes, ReporteFlota, ReporteOperativo } from '@/types';
 
 /**
  * URL base del backend API.
@@ -400,4 +400,28 @@ export async function eliminarNotificacion(id: number): Promise<ApiResponse<void
 /** Limpiar (eliminar) todas las notificaciones del usuario */
 export async function limpiarNotificaciones(): Promise<ApiResponse<void>> {
     return fetchAPI<void>('/api/notificaciones/limpiar', { method: 'DELETE' });
+}
+
+// ============================================================================
+// REPORTES
+// ============================================================================
+
+/** Reporte de solicitudes con filtro opcional de fechas */
+export async function reporteSolicitudes(desde?: string, hasta?: string): Promise<ApiResponse<ReporteSolicitudes>> {
+    let url = '/api/reportes/solicitudes';
+    const params: string[] = [];
+    if (desde) params.push(`desde=${desde}`);
+    if (hasta) params.push(`hasta=${hasta}`);
+    if (params.length > 0) url += '?' + params.join('&');
+    return fetchAPI<ReporteSolicitudes>(url);
+}
+
+/** Reporte de flota */
+export async function reporteFlota(): Promise<ApiResponse<ReporteFlota>> {
+    return fetchAPI<ReporteFlota>('/api/reportes/flota');
+}
+
+/** Reporte operativo */
+export async function reporteOperativo(): Promise<ApiResponse<ReporteOperativo>> {
+    return fetchAPI<ReporteOperativo>('/api/reportes/operativo');
 }

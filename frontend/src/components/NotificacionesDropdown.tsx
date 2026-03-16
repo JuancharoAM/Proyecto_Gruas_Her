@@ -83,23 +83,40 @@ export default function NotificacionesDropdown() {
     /** Ref para el panel (usado en portal para cerrar al click fuera) */
     const panelRef = useRef<HTMLDivElement>(null);
 
-    /** Cerrar dropdown al hacer clic fuera (solo desktop, movil usa boton volver) */
+    /** Cerrar dropdown al hacer clic/tap fuera (solo desktop, movil usa boton volver) */
     useEffect(() => {
         if (isMobile) return;
-        function handleClickOutside(e: MouseEvent) {
+        function handleClickOutside(e: MouseEvent | TouchEvent) {
             const target = e.target as Node;
             if (dropdownRef.current && dropdownRef.current.contains(target)) return;
             if (panelRef.current && panelRef.current.contains(target)) return;
             setIsOpen(false);
         }
         document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        document.addEventListener("touchstart", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
     }, [isMobile]);
 
-    /** Bloquear scroll del body cuando el panel movil esta abierto */
+    /** Bloquear scroll del body cuando el panel movil esta abierto (iOS-safe) */
     useEffect(() => {
         if (isOpen && isMobile) {
+            const scrollY = window.scrollY;
+            document.body.style.position = "fixed";
+            document.body.style.top = `-${scrollY}px`;
+            document.body.style.left = "0";
+            document.body.style.right = "0";
             document.body.style.overflow = "hidden";
+            return () => {
+                document.body.style.position = "";
+                document.body.style.top = "";
+                document.body.style.left = "";
+                document.body.style.right = "";
+                document.body.style.overflow = "";
+                window.scrollTo(0, scrollY);
+            };
         } else {
             document.body.style.overflow = "";
         }
@@ -193,14 +210,15 @@ export default function NotificacionesDropdown() {
             left: 0,
             right: 0,
             bottom: 0,
-            width: "100%",
-            height: "100%",
+            width: "100vw",
             zIndex: 2000,
             borderRadius: 0,
             boxShadow: "none",
             border: "none",
             background: "var(--bg-surface, #ffffff)",
             overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }
         : {
             position: "fixed",
@@ -223,7 +241,7 @@ export default function NotificacionesDropdown() {
                 className="btn btn-ghost btn-sm btn-icon"
                 onClick={toggleDropdown}
                 title="Notificaciones"
-                style={{ position: "relative" }}
+                style={{ position: "relative", touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
             >
                 <Icon name="bell" size={18} />
                 {noLeidas > 0 && (
@@ -272,9 +290,13 @@ export default function NotificacionesDropdown() {
                                         border: "none",
                                         cursor: "pointer",
                                         color: "var(--text-primary)",
-                                        padding: "4px",
+                                        padding: "8px",
                                         display: "flex",
                                         alignItems: "center",
+                                        touchAction: "manipulation",
+                                        minWidth: "44px",
+                                        minHeight: "44px",
+                                        justifyContent: "center",
                                     }}
                                 >
                                     <Icon name="arrowRight" size={20} className="icon-back" />
