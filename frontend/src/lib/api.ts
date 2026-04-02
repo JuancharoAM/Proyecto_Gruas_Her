@@ -10,7 +10,7 @@
  * ============================================================================
  */
 
-import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Mantenimiento, Combustible, Cliente, Notificacion, ReporteSolicitudes, ReporteFlota, ReporteOperativo } from '@/types';
+import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Mantenimiento, Combustible, Cliente, Notificacion, ReporteSolicitudes, ReporteFlota, ReporteOperativo, Factura, ResumenFacturas, SolicitudFacturable, Evaluacion, PromedioChofer } from '@/types';
 
 /**
  * URL base del backend API.
@@ -424,4 +424,75 @@ export async function reporteFlota(): Promise<ApiResponse<ReporteFlota>> {
 /** Reporte operativo */
 export async function reporteOperativo(): Promise<ApiResponse<ReporteOperativo>> {
     return fetchAPI<ReporteOperativo>('/api/reportes/operativo');
+}
+
+// ============================================================================
+// FACTURAS
+// ============================================================================
+
+/** Listar facturas con filtro opcional por estado */
+export async function listarFacturas(estado?: string): Promise<ApiResponse<Factura[]>> {
+    const query = estado ? `?estado=${encodeURIComponent(estado)}` : '';
+    return fetchAPI<Factura[]>(`/api/facturas${query}`);
+}
+
+/** Obtener una factura por ID */
+export async function obtenerFactura(id: number): Promise<ApiResponse<Factura>> {
+    return fetchAPI<Factura>(`/api/facturas/${id}`);
+}
+
+/** Crear una nueva factura */
+export async function crearFactura(datos: { solicitud_id: number; subtotal: number; descripcion?: string; notas?: string }): Promise<ApiResponse<Factura>> {
+    return fetchAPI<Factura>('/api/facturas', {
+        method: 'POST',
+        body: JSON.stringify(datos),
+    });
+}
+
+/** Marcar factura como pagada */
+export async function marcarFacturaPagada(id: number): Promise<ApiResponse<Factura>> {
+    return fetchAPI<Factura>(`/api/facturas/${id}/pagar`, { method: 'PUT' });
+}
+
+/** Anular una factura */
+export async function anularFactura(id: number): Promise<ApiResponse<Factura>> {
+    return fetchAPI<Factura>(`/api/facturas/${id}/anular`, { method: 'PUT' });
+}
+
+/** Obtener resumen de facturas */
+export async function obtenerResumenFacturas(): Promise<ApiResponse<ResumenFacturas>> {
+    return fetchAPI<ResumenFacturas>('/api/facturas/resumen');
+}
+
+/** Listar solicitudes finalizadas sin factura */
+export async function listarSolicitudesSinFactura(): Promise<ApiResponse<SolicitudFacturable[]>> {
+    return fetchAPI<SolicitudFacturable[]>('/api/facturas/solicitudes-sin-factura');
+}
+
+// ============================================================================
+// EVALUACIONES
+// ============================================================================
+
+/** Crear una evaluacion (solo clientes) */
+export async function crearEvaluacion(datos: { solicitud_id: number; calificacion: number; comentario?: string }): Promise<ApiResponse<Evaluacion>> {
+    return fetchAPI<Evaluacion>('/api/evaluaciones', {
+        method: 'POST',
+        body: JSON.stringify(datos),
+    });
+}
+
+/** Obtener evaluacion de una solicitud */
+export async function obtenerEvaluacionPorSolicitud(solicitudId: number): Promise<ApiResponse<Evaluacion>> {
+    return fetchAPI<Evaluacion>(`/api/evaluaciones/solicitud/${solicitudId}`);
+}
+
+/** Listar evaluaciones con filtro opcional por chofer */
+export async function listarEvaluaciones(choferId?: number): Promise<ApiResponse<Evaluacion[]>> {
+    const query = choferId ? `?chofer_id=${choferId}` : '';
+    return fetchAPI<Evaluacion[]>(`/api/evaluaciones${query}`);
+}
+
+/** Obtener promedios de calificacion por chofer */
+export async function obtenerPromediosChoferes(): Promise<ApiResponse<PromedioChofer[]>> {
+    return fetchAPI<PromedioChofer[]>('/api/evaluaciones/promedios');
 }

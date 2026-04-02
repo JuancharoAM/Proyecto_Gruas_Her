@@ -218,6 +218,69 @@ export interface ReporteOperativo {
     costos_combustible_mensual: { mes: string; total_litros: number; total_costo: number; cargas: number }[];
 }
 
+/** Factura emitida */
+export interface Factura {
+    id: number;
+    numero_factura: string;
+    solicitud_id: number;
+    numero_servicio?: string;
+    cliente_nombre: string;
+    cliente_telefono?: string;
+    cliente_email?: string;
+    subtotal: number;
+    impuesto_pct: number;
+    impuesto_monto: number;
+    total: number;
+    estado: string;
+    descripcion?: string;
+    fecha_emision: string;
+    fecha_pago?: string;
+    creado_por: number;
+    notas?: string;
+}
+
+/** Resumen de facturas para dashboard */
+export interface ResumenFacturas {
+    total_pendiente: number;
+    total_pagado: number;
+    cantidad_pendientes: number;
+    cantidad_pagadas: number;
+    cantidad_anuladas: number;
+}
+
+/** Solicitud disponible para facturar */
+export interface SolicitudFacturable {
+    id: number;
+    numero_servicio: string;
+    cliente_nombre: string;
+    cliente_telefono?: string;
+    cliente_email?: string;
+    descripcion_problema?: string;
+    fecha_finalizacion: string;
+}
+
+/** Evaluacion post-servicio */
+export interface Evaluacion {
+    id: number;
+    solicitud_id: number;
+    numero_servicio?: string;
+    chofer_id: number;
+    chofer_nombre?: string;
+    calificacion: number;
+    comentario?: string;
+    evaluado_por: number;
+    cliente_nombre?: string;
+    fecha_creacion: string;
+}
+
+/** Promedio de calificacion por chofer */
+export interface PromedioChofer {
+    chofer_id: number;
+    chofer_nombre: string;
+    promedio: number;
+    total_evaluaciones: number;
+}
+
 /** Respuesta genérica de la API */
 export interface ApiResponse<T> {
     success: boolean;
