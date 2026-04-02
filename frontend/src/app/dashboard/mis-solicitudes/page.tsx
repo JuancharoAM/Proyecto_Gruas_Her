@@ -9,9 +9,10 @@
  */
 
 import { useEffect, useState } from "react";
-import { listarMisSolicitudes, crearSolicitud } from "@/lib/api";
-import { Solicitud, Usuario } from "@/types";
+import { listarMisSolicitudes, crearSolicitud, crearEvaluacion, obtenerEvaluacionPorSolicitud } from "@/lib/api";
+import { Solicitud, Usuario, Evaluacion } from "@/types";
 import Icon from "@/components/Icon";
+import StarRating from "@/components/StarRating";
 
 export default function MisSolicitudesPage() {
     const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
@@ -26,11 +27,28 @@ export default function MisSolicitudesPage() {
     });
     const [mensaje, setMensaje] = useState("");
     const [error, setError] = useState("");
+    const [modalEvaluar, setModalEvaluar] = useState(false);
+    const [solicitudEvaluar, setSolicitudEvaluar] = useState<Solicitud | null>(null);
+    const [evaluaciones, setEvaluaciones] = useState<Record<number, Evaluacion>>({});
+    const [calificacion, setCalificacion] = useState(0);
+    const [comentario, setComentario] = useState("");
 
     useEffect(() => {
         const userData = localStorage.getItem("usuario");
         if (userData) setUsuario(JSON.parse(userData));
     }, []);
+
+    async function cargarEvaluaciones(solicitudes: Solicitud[]) {
+        const finalizadas = solicitudes.filter(s => s.estado === "Finalizada");
+        const evals: Record<number, Evaluacion> = {};
+        for (const s of finalizadas) {
+            try {
+                const res = await obtenerEvaluacionPorSolicitud(s.id);
+                if (res.success && res.data) evals[s.id] = res.data;
+            } catch { /* empty */ }
+        }
+        setEvaluaciones(evals);
+    }
 
     async function cargarSolicitudes(silencioso = false) {
         if (!silencioso) setLoading(true);
@@ -38,9 +56,37 @@ export default function MisSolicitudesPage() {
             const res = await listarMisSolicitudes();
             if (res.success && res.data) {
                 setSolicitudes(res.data);
+                cargarEvaluaciones(res.data);
             }
         } catch { if (!silencioso) setError("Error al cargar solicitudes."); }
         if (!silencioso) setLoading(false);
+    }
+
+    function abrirModalEvaluar(s: Solicitud) {
+        setSolicitudEvaluar(s);
+        setCalificacion(0);
+        setComentario("");
+        setError("");
+        setModalEvaluar(true);
+    }
+
+    async function handleEvaluar() {
+        setError("");
+        if (!solicitudEvaluar) return;
+        if (calificacion === 0) { setError("Seleccione una calificación."); return; }
+        try {
+            const res = await crearEvaluacion({
+                solicitud_id: solicitudEvaluar.id,
+                calificacion,
+                comentario: comentario || undefined,
+            });
+            if (res.success) {
+                setMensaje("¡Evaluación enviada! Gracias por su calificación.");
+                setModalEvaluar(false);
+                cargarSolicitudes();
+                setTimeout(() => setMensaje(""), 3000);
+            } else { setError(res.message || "Error al enviar evaluación."); }
+        } catch { setError("Error de conexión."); }
     }
 
     useEffect(() => {
@@ -146,6 +192,17 @@ export default function MisSolicitudesPage() {
                                         </td>
                                         <td className="text-muted">{formatFecha(s.fecha_solicitud)}</td>
                                         <td>
+                                            {s.estado === "Finalizada" && !evaluaciones[s.id] && (
+                                                <button className="btn btn-ghost btn-sm" onClick={() => abrirModalEvaluar(s)}
+                                                    style={{ color: "#f5a623" }}>
+                                                    <Icon name="star" size={14} /> Evaluar
+                                                </button>
+                                            )}
+                                            {s.estado === "Finalizada" && evaluaciones[s.id] && (
+                                                <span style={{ marginRight: "4px" }}>
+                                                    <StarRating value={evaluaciones[s.id].calificacion} readonly size={14} />
+                                                </span>
+                                            )}
                                             <button className="btn btn-ghost btn-sm" onClick={() => verDetalle(s)}>
                                                 <Icon name="chart" size={14} /> Detalle
                                             </button>
@@ -202,6 +259,43 @@ export default function MisSolicitudesPage() {
                             <button className="btn btn-ghost" onClick={() => setModalCrear(false)}>Cancelar</button>
                             <button className="btn btn-primary" onClick={handleCrear}>
                                 Enviar Solicitud
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Evaluar Servicio */}
+            {modalEvaluar && solicitudEvaluar && (
+                <div className="modal-overlay" onClick={() => setModalEvaluar(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Evaluar Servicio {solicitudEvaluar.numero_servicio}</h3>
+                            <button className="modal-close" onClick={() => setModalEvaluar(false)}>
+                                <Icon name="close" size={20} />
+                            </button>
+                        </div>
+                        {error && <div className="alert alert-error">{error}</div>}
+
+                        <div style={{ textAlign: "center", margin: "20px 0" }}>
+                            <p className="text-muted" style={{ marginBottom: "12px" }}>¿Cómo fue su experiencia?</p>
+                            <StarRating value={calificacion} onChange={setCalificacion} size={36} />
+                            <p style={{ marginTop: "8px", fontWeight: 600, fontSize: "14px" }}>
+                                {calificacion === 0 ? "" : ["", "Muy malo", "Malo", "Regular", "Bueno", "Excelente"][calificacion]}
+                            </p>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Comentario (opcional)</label>
+                            <textarea className="form-input" rows={3} value={comentario}
+                                placeholder="Cuéntenos sobre su experiencia..."
+                                onChange={e => setComentario(e.target.value)} />
+                        </div>
+
+                        <div className="modal-footer">
+                            <button className="btn btn-ghost" onClick={() => setModalEvaluar(false)}>Cancelar</button>
+                            <button className="btn btn-primary" onClick={handleEvaluar} disabled={calificacion === 0}>
+                                Enviar Evaluación
                             </button>
                         </div>
                     </div>
