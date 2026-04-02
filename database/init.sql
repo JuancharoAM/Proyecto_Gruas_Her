@@ -349,5 +349,25 @@ BEGIN
 END
 GO
 
+-- ============================================================================
+-- TABLA: ubicaciones
+-- Ultima posicion GPS reportada por cada camion. Una fila por camion (UNIQUE).
+-- El chofer actualiza via MERGE cada 10 segundos desde Mis Servicios.
+-- ============================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ubicaciones')
+BEGIN
+    CREATE TABLE ubicaciones (
+        id              INT PRIMARY KEY IDENTITY(1,1),
+        camion_id       INT NOT NULL UNIQUE,
+        chofer_id       INT NOT NULL,
+        latitud         DECIMAL(10,7) NOT NULL,
+        longitud        DECIMAL(10,7) NOT NULL,
+        fecha_reporte   DATETIME DEFAULT GETDATE(),
+        CONSTRAINT FK_ubicaciones_camion FOREIGN KEY (camion_id) REFERENCES camiones(id),
+        CONSTRAINT FK_ubicaciones_chofer FOREIGN KEY (chofer_id) REFERENCES usuarios(id)
+    );
+END
+GO
+
 PRINT 'Base de datos inicializada correctamente.';
 GO
