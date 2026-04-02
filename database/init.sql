@@ -296,5 +296,58 @@ BEGIN
 END
 GO
 
+-- ============================================================================
+-- TABLA: facturas
+-- Registro de facturas emitidas por servicios de grua finalizados.
+-- Numero auto-generado FAC-YYYY-NNNN. IVA 13% (Costa Rica).
+-- Estados: Pendiente, Pagada, Anulada.
+-- ============================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'facturas')
+BEGIN
+    CREATE TABLE facturas (
+        id                INT PRIMARY KEY IDENTITY(1,1),
+        numero_factura    VARCHAR(20) NOT NULL UNIQUE,
+        solicitud_id      INT NOT NULL,
+        cliente_nombre    VARCHAR(100) NOT NULL,
+        cliente_telefono  VARCHAR(20),
+        cliente_email     VARCHAR(100),
+        subtotal          DECIMAL(12,2) NOT NULL,
+        impuesto_pct      DECIMAL(5,2) DEFAULT 13.00,
+        impuesto_monto    DECIMAL(12,2) NOT NULL,
+        total             DECIMAL(12,2) NOT NULL,
+        estado            VARCHAR(20) DEFAULT 'Pendiente',
+        descripcion       TEXT,
+        fecha_emision     DATETIME DEFAULT GETDATE(),
+        fecha_pago        DATETIME NULL,
+        creado_por        INT NOT NULL,
+        notas             TEXT NULL,
+        CONSTRAINT FK_facturas_solicitud FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id),
+        CONSTRAINT FK_facturas_creador FOREIGN KEY (creado_por) REFERENCES usuarios(id)
+    );
+END
+GO
+
+-- ============================================================================
+-- TABLA: evaluaciones
+-- Calificaciones post-servicio. Un cliente evalua al chofer (1-5 estrellas).
+-- Una sola evaluacion por solicitud (UNIQUE en solicitud_id).
+-- ============================================================================
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'evaluaciones')
+BEGIN
+    CREATE TABLE evaluaciones (
+        id                INT PRIMARY KEY IDENTITY(1,1),
+        solicitud_id      INT NOT NULL UNIQUE,
+        chofer_id         INT NOT NULL,
+        calificacion      INT NOT NULL CHECK (calificacion BETWEEN 1 AND 5),
+        comentario        TEXT NULL,
+        evaluado_por      INT NOT NULL,
+        fecha_creacion    DATETIME DEFAULT GETDATE(),
+        CONSTRAINT FK_evaluaciones_solicitud FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id),
+        CONSTRAINT FK_evaluaciones_chofer FOREIGN KEY (chofer_id) REFERENCES usuarios(id),
+        CONSTRAINT FK_evaluaciones_evaluador FOREIGN KEY (evaluado_por) REFERENCES usuarios(id)
+    );
+END
+GO
+
 PRINT 'Base de datos inicializada correctamente.';
 GO
