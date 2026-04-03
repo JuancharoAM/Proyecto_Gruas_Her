@@ -38,6 +38,8 @@ const menuItems = [
       roles: ["Administrador"] },
     { href: "/dashboard/evaluaciones", label: "Evaluaciones", icon: "star",
       roles: ["Administrador", "Logística"] },
+    { href: "/dashboard/mapa", label: "Mapa GPS", icon: "map",
+      roles: ["Administrador", "Logística"] },
     { href: "/dashboard/usuarios", label: "Usuarios", icon: "users",
       roles: ["Administrador"] },
     { href: "/dashboard/mis-servicios", label: "Mis Servicios", icon: "route",
