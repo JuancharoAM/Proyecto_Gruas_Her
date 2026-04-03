@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Solicitud } from "@/types";
-import { listarMisServicios, actualizarEstadoSolicitud } from "@/lib/api";
+import { listarMisServicios, actualizarEstadoSolicitud, reportarUbicacion } from "@/lib/api";
 import Icon from "@/components/Icon";
 
 export default function MisServiciosPage() {
@@ -16,6 +16,34 @@ export default function MisServiciosPage() {
         const intervalo = setInterval(() => cargarServicios(true), 15000);
         return () => clearInterval(intervalo);
     }, []);
+
+    // Reporte automático de ubicación GPS cada 10s cuando hay un servicio activo
+    useEffect(() => {
+        const activo = servicios.find(s =>
+            s.estado === 'En camino' || s.estado === 'Atendiendo'
+        );
+        if (!activo || !activo.camion_id) return;
+
+        const camionId = activo.camion_id;
+
+        const reportar = () => {
+            if (!('geolocation' in navigator)) return;
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    reportarUbicacion({
+                        camion_id: camionId,
+                        latitud: pos.coords.latitude,
+                        longitud: pos.coords.longitude,
+                    }).catch(() => {});
+                },
+                () => {} // Silencioso si el usuario deniega el permiso
+            );
+        };
+
+        reportar(); // Reporte inmediato al activarse
+        const intervalo = setInterval(reportar, 10000);
+        return () => clearInterval(intervalo);
+    }, [servicios]);
 
     async function cargarServicios(silencioso = false) {
         try {
