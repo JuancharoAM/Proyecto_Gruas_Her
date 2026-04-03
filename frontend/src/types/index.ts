@@ -287,3 +287,15 @@ export interface ApiResponse<T> {
     message?: string;
     data?: T;
 }
+
+/** Ubicación GPS en tiempo real de una grúa con solicitud activa */
+export interface UbicacionActiva {
+    camion_id: number;
+    placa: string;
+    chofer_nombre: string;
+    numero_servicio: string;
+    cliente_nombre: string;
+    latitud: number;
+    longitud: number;
+    fecha_reporte: string;
+}

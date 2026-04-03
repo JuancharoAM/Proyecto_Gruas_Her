@@ -10,7 +10,7 @@
  * ============================================================================
  */
 
-import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Mantenimiento, Combustible, Cliente, Notificacion, ReporteSolicitudes, ReporteFlota, ReporteOperativo, Factura, ResumenFacturas, SolicitudFacturable, Evaluacion, PromedioChofer } from '@/types';
+import { ApiResponse, LoginResponse, Usuario, UsuarioCompleto, Rol, Camion, TipoGrua, Solicitud, DashboardStats, Mantenimiento, Combustible, Cliente, Notificacion, ReporteSolicitudes, ReporteFlota, ReporteOperativo, Factura, ResumenFacturas, SolicitudFacturable, Evaluacion, PromedioChofer, UbicacionActiva } from '@/types';
 
 /**
  * URL base del backend API.
@@ -495,4 +495,21 @@ export async function listarEvaluaciones(choferId?: number): Promise<ApiResponse
 /** Obtener promedios de calificacion por chofer */
 export async function obtenerPromediosChoferes(): Promise<ApiResponse<PromedioChofer[]>> {
     return fetchAPI<PromedioChofer[]>('/api/evaluaciones/promedios');
+}
+
+// ============================================================================
+// UBICACIONES GPS
+// ============================================================================
+
+export async function listarUbicacionesActivas(): Promise<UbicacionActiva[]> {
+    const res = await fetchAPI<UbicacionActiva[]>('/api/ubicaciones/activas');
+    return res.data ?? [];
+}
+
+export async function reportarUbicacion(data: {
+    camion_id: number;
+    latitud: number;
+    longitud: number;
+}): Promise<void> {
+    await fetchAPI('/api/ubicaciones', { method: 'POST', body: JSON.stringify(data) });
 }
