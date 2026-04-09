@@ -10,7 +10,7 @@
  * ============================================================================
  */
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     reporteSolicitudes, reporteFlota, reporteOperativo,
 } from "@/lib/api";
@@ -295,65 +295,131 @@ ${contenidoHTML}
         return map[estado] || "badge-info";
     }
 
-    // ======================== Componente: Barra CSS ========================
+    // ======================== Estilos compartidos ========================
 
-    function BarraHorizontal({ items, colorMap }: { items: { label: string; valor: number }[]; colorMap: Record<string, string> }) {
-        const max = Math.max(...items.map(i => i.valor), 1);
+    const panelTitle: React.CSSProperties = {
+        margin: "0 0 18px", fontSize: "11px", fontWeight: 700,
+        letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--text-secondary)",
+    };
+
+    // ======================== Componentes de Visualización ========================
+
+    function DonutChart({ items, centro }: {
+        items: { label: string; valor: number; color: string }[];
+        centro: { valor: string | number; label: string };
+    }) {
+        const total = items.reduce((s, i) => s + i.valor, 0);
+        let acc = 0;
+        const gradient = total === 0
+            ? "conic-gradient(rgba(255,255,255,0.08) 0% 100%)"
+            : `conic-gradient(${items.map(item => {
+                const pct = (item.valor / total) * 100;
+                const seg = `${item.color} ${acc.toFixed(1)}% ${(acc + pct).toFixed(1)}%`;
+                acc += pct;
+                return seg;
+            }).join(", ")})`;
+
         return (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {items.map((item, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <span style={{ width: "110px", fontSize: "13px", textAlign: "right", flexShrink: 0, color: "var(--text-secondary)" }}>
-                            {item.label}
-                        </span>
-                        <div style={{ flex: 1, height: "28px", background: "var(--bg-subtle)", borderRadius: "6px", overflow: "hidden", position: "relative" }}>
-                            <div style={{
-                                width: `${Math.max((item.valor / max) * 100, 2)}%`,
-                                height: "100%",
-                                background: colorMap[item.label] || "var(--color-primary)",
-                                borderRadius: "6px",
-                                transition: "width 0.6s ease",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "flex-end",
-                                paddingRight: "8px",
-                            }}>
-                                <span style={{ fontSize: "12px", fontWeight: 600, color: "white", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
-                                    {item.valor}
-                                </span>
-                            </div>
-                        </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "22px" }}>
+                <div style={{
+                    width: "148px", height: "148px", borderRadius: "50%",
+                    background: gradient, flexShrink: 0, position: "relative",
+                    boxShadow: "0 0 0 1px rgba(255,255,255,0.07), 0 8px 32px rgba(0,0,0,0.35)",
+                }}>
+                    <div style={{
+                        position: "absolute", top: "50%", left: "50%",
+                        transform: "translate(-50%,-50%)",
+                        width: "78px", height: "78px", borderRadius: "50%",
+                        background: "var(--bg-surface)",
+                        backdropFilter: "blur(10px)",
+                        WebkitBackdropFilter: "blur(10px)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        display: "flex", flexDirection: "column",
+                        alignItems: "center", justifyContent: "center",
+                        boxShadow: "inset 0 1px 2px rgba(255,255,255,0.06), 0 4px 16px rgba(0,0,0,0.4)",
+                    }}>
+                        <span style={{ fontSize: "17px", fontWeight: 900, color: "var(--color-primary)", lineHeight: 1 }}>{centro.valor}</span>
+                        <span style={{ fontSize: "9px", color: "var(--text-secondary)", marginTop: "3px", textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>{centro.label}</span>
                     </div>
-                ))}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1, minWidth: 0 }}>
+                    {items.filter(i => i.valor > 0).map((item, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <div style={{
+                                width: "9px", height: "9px", borderRadius: "50%", flexShrink: 0,
+                                background: item.color, boxShadow: `0 0 8px ${item.color}`,
+                            }} />
+                            <span style={{ fontSize: "12px", color: "var(--text-secondary)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>
+                            <span style={{ fontSize: "13px", fontWeight: 700, color: item.color }}>{item.valor}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
 
-    function BarraDoble({ items }: { items: { label: string; val1: number; val2: number; label1: string; label2: string; color1: string; color2: string }[] }) {
-        const max = Math.max(...items.flatMap(i => [i.val1, i.val2]), 1);
+    function BarrasVerticales({ items, leyenda, altura = 160 }: {
+        items: { label: string; barras: { valor: number; color: string }[] }[];
+        leyenda?: { label: string; color: string }[];
+        altura?: number;
+    }) {
+        const max = Math.max(...items.flatMap(i => i.barras.map(b => b.valor)), 1);
+        const labelH = 34;
+        const barH = altura - labelH;
+
         return (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {items.map((item, i) => (
-                    <div key={i}>
-                        <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>{item.label}</div>
-                        <div style={{ display: "flex", gap: "4px" }}>
-                            <div style={{ flex: 1, height: "20px", background: "var(--bg-subtle)", borderRadius: "4px", overflow: "hidden" }}>
-                                <div style={{ width: `${Math.max((item.val1 / max) * 100, 2)}%`, height: "100%", background: item.color1, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <span style={{ fontSize: "10px", fontWeight: 600, color: "white" }}>{item.val1}</span>
-                                </div>
+            <div>
+                <div style={{
+                    display: "flex", alignItems: "flex-end", gap: "4px",
+                    height: `${altura}px`,
+                    borderBottom: "1px solid rgba(255,255,255,0.07)",
+                }}>
+                    {items.map((col, i) => (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
+                            <div style={{ flex: 1, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "2px" }}>
+                                {col.barras.map((bar, j) => {
+                                    const h = Math.max(Math.round((bar.valor / max) * barH), 4);
+                                    const w = col.barras.length > 1 ? "13px" : "clamp(14px, 4vw, 32px)";
+                                    return (
+                                        <div key={j} style={{
+                                            width: w, height: `${h}px`,
+                                            borderRadius: "5px 5px 0 0",
+                                            background: `linear-gradient(180deg, ${bar.color} 0%, ${bar.color}99 100%)`,
+                                            position: "relative", overflow: "hidden",
+                                            boxShadow: `0 -3px 14px ${bar.color}55`,
+                                        }}>
+                                            <div style={{
+                                                position: "absolute", top: 0, left: 0, right: 0, height: "40%",
+                                                background: "linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.01) 100%)",
+                                                borderRadius: "5px 5px 0 0",
+                                            }} />
+                                            <div style={{
+                                                position: "absolute", inset: 0,
+                                                border: "1px solid rgba(255,255,255,0.16)", borderBottom: "none",
+                                                borderRadius: "5px 5px 0 0",
+                                            }} />
+                                        </div>
+                                    );
+                                })}
                             </div>
-                            <div style={{ flex: 1, height: "20px", background: "var(--bg-subtle)", borderRadius: "4px", overflow: "hidden" }}>
-                                <div style={{ width: `${Math.max((item.val2 / max) * 100, 2)}%`, height: "100%", background: item.color2, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <span style={{ fontSize: "10px", fontWeight: 600, color: "white" }}>{item.val2}</span>
-                                </div>
+                            <div style={{
+                                height: `${labelH}px`, display: "flex", alignItems: "center", justifyContent: "center",
+                                fontSize: "10px", color: "var(--text-secondary)",
+                                textAlign: "center", lineHeight: 1.3, padding: "4px 2px",
+                            }}>{col.label}</div>
+                        </div>
+                    ))}
+                </div>
+                {leyenda && (
+                    <div style={{ display: "flex", gap: "16px", marginTop: "8px" }}>
+                        {leyenda.map((l, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--text-secondary)" }}>
+                                <div style={{ width: "8px", height: "8px", borderRadius: "2px", background: l.color, boxShadow: `0 0 6px ${l.color}` }} />
+                                {l.label}
                             </div>
-                        </div>
-                        <div style={{ display: "flex", gap: "4px", marginTop: "2px" }}>
-                            <span style={{ flex: 1, fontSize: "10px", color: item.color1 }}>{item.label1}</span>
-                            <span style={{ flex: 1, fontSize: "10px", color: item.color2 }}>{item.label2}</span>
-                        </div>
+                        ))}
                     </div>
-                ))}
+                )}
             </div>
         );
     }
@@ -363,12 +429,29 @@ ${contenidoHTML}
     function StatCard({ label, valor, color, icono }: { label: string; valor: string | number; color: string; icono?: string }) {
         return (
             <div style={{
-                background: "var(--bg-surface, #fff)", borderRadius: "var(--radius-lg, 12px)",
-                padding: "20px", border: "1px solid var(--border-color)", textAlign: "center",
+                background: "var(--bg-surface)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                borderRadius: "16px",
+                border: "1px solid rgba(255,255,255,0.08)",
+                padding: "18px 12px",
+                textAlign: "center",
+                position: "relative",
+                overflow: "hidden",
             }}>
-                {icono && <div style={{ color, marginBottom: "8px" }}><Icon name={icono} size={24} /></div>}
-                <div style={{ fontSize: "28px", fontWeight: 700, color, lineHeight: 1.1 }}>{valor}</div>
-                <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "6px" }}>{label}</div>
+                <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, height: "2px",
+                    background: color,
+                    boxShadow: `0 0 10px ${color}, 0 0 4px ${color}`,
+                }} />
+                <div style={{
+                    position: "absolute", top: "-20px", left: "50%", transform: "translateX(-50%)",
+                    width: "70px", height: "70px", borderRadius: "50%",
+                    background: color, filter: "blur(24px)", opacity: 0.14, pointerEvents: "none",
+                }} />
+                {icono && <div style={{ color, marginBottom: "6px", position: "relative" }}><Icon name={icono} size={20} /></div>}
+                <div style={{ fontSize: "26px", fontWeight: 900, color, lineHeight: 1.1, position: "relative" }}>{valor}</div>
+                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "5px" }}>{label}</div>
             </div>
         );
     }
@@ -378,15 +461,12 @@ ${contenidoHTML}
     function renderSolicitudes() {
         if (!dataSol) return null;
         const { resumen } = dataSol;
-        const coloresEstado: Record<string, string> = {
-            "Pendiente": "#f59e0b", "Asignada": "#3b82f6", "En camino": "#8b5cf6",
-            "Atendiendo": "#f97316", "Finalizada": "#10b981", "Cancelada": "#ef4444",
-        };
+        const coloresTipo: Record<string, string> = { "Estándar": "#3b82f6", "Pesado": "#f97316", "Especial": "#8b5cf6" };
+        const coloresPrioridad: Record<string, string> = { "Baja": "#6b7280", "Normal": "#3b82f6", "Alta": "#f59e0b", "Urgente": "#ef4444" };
 
         return (
             <>
-                {/* Stat cards */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginBottom: "24px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "10px", marginBottom: "14px" }}>
                     <StatCard label="Total" valor={resumen.total} color="var(--color-primary)" icono="solicitudes" />
                     <StatCard label="Finalizadas" valor={resumen.finalizadas} color="#10b981" icono="check-circle" />
                     <StatCard label="Activas" valor={resumen.asignadas + resumen.en_camino + resumen.atendiendo} color="#3b82f6" icono="route" />
@@ -395,67 +475,62 @@ ${contenidoHTML}
                     <StatCard label="Tasa éxito" valor={`${resumen.tasa_finalizacion}%`} color="#10b981" icono="chart" />
                 </div>
 
-                {/* Gráficos en grid */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
-                    {/* Distribución por estado */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
                     <div className="glass-panel" style={{ padding: "20px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Distribución por Estado</h4>
-                        <BarraHorizontal
+                        <div style={panelTitle}>Distribución por Estado</div>
+                        <DonutChart
                             items={[
-                                { label: "Pendiente", valor: resumen.pendientes },
-                                { label: "Asignada", valor: resumen.asignadas },
-                                { label: "En camino", valor: resumen.en_camino },
-                                { label: "Atendiendo", valor: resumen.atendiendo },
-                                { label: "Finalizada", valor: resumen.finalizadas },
-                                { label: "Cancelada", valor: resumen.canceladas },
+                                { label: "Finalizada", valor: resumen.finalizadas, color: "#10b981" },
+                                { label: "Pendiente", valor: resumen.pendientes, color: "#f59e0b" },
+                                { label: "Asignada", valor: resumen.asignadas, color: "#3b82f6" },
+                                { label: "En camino", valor: resumen.en_camino, color: "#8b5cf6" },
+                                { label: "Atendiendo", valor: resumen.atendiendo, color: "#f97316" },
+                                { label: "Cancelada", valor: resumen.canceladas, color: "#ef4444" },
                             ]}
-                            colorMap={coloresEstado}
+                            centro={{ valor: resumen.total, label: "servicios" }}
                         />
                     </div>
 
-                    {/* Por tipo de servicio */}
                     <div className="glass-panel" style={{ padding: "20px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Por Tipo de Servicio</h4>
-                        <BarraHorizontal
-                            items={dataSol.por_tipo_servicio.map(t => ({ label: t.tipo, valor: t.cantidad }))}
-                            colorMap={{ "Estándar": "#3b82f6", "Pesado": "#f97316", "Especial": "#8b5cf6" }}
-                        />
-                        {dataSol.por_tipo_servicio.length === 0 && <p className="text-muted" style={{ fontSize: "13px" }}>Sin datos</p>}
+                        <div style={panelTitle}>Por Tipo de Servicio</div>
+                        {dataSol.por_tipo_servicio.length > 0 ? (
+                            <DonutChart
+                                items={dataSol.por_tipo_servicio.map(t => ({ label: t.tipo, valor: t.cantidad, color: coloresTipo[t.tipo] || "var(--color-primary)" }))}
+                                centro={{ valor: dataSol.por_tipo_servicio.reduce((s, t) => s + t.cantidad, 0), label: "servicios" }}
+                            />
+                        ) : <p className="text-muted" style={{ fontSize: "13px" }}>Sin datos</p>}
                     </div>
 
-                    {/* Tendencia mensual */}
                     <div className="glass-panel" style={{ padding: "20px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Tendencia Mensual (6 meses)</h4>
+                        <div style={panelTitle}>Tendencia Mensual (6 meses)</div>
                         {dataSol.por_mes.length > 0 ? (
-                            <BarraDoble items={dataSol.por_mes.map(m => ({
-                                label: formatMes(m.mes), val1: m.finalizadas, val2: m.canceladas,
-                                label1: "Finalizadas", label2: "Canceladas",
-                                color1: "#10b981", color2: "#ef4444",
-                            }))} />
+                            <BarrasVerticales
+                                items={dataSol.por_mes.map(m => ({
+                                    label: formatMes(m.mes),
+                                    barras: [{ valor: m.finalizadas, color: "#10b981" }, { valor: m.canceladas, color: "#ef4444" }],
+                                }))}
+                                leyenda={[{ label: "Finalizadas", color: "#10b981" }, { label: "Canceladas", color: "#ef4444" }]}
+                            />
                         ) : <p className="text-muted" style={{ fontSize: "13px" }}>Sin datos históricos</p>}
                     </div>
 
-                    {/* Por prioridad */}
                     <div className="glass-panel" style={{ padding: "20px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Por Prioridad</h4>
-                        <BarraHorizontal
-                            items={dataSol.por_prioridad.map(p => ({ label: p.prioridad, valor: p.cantidad }))}
-                            colorMap={{ "Baja": "#6b7280", "Normal": "#3b82f6", "Alta": "#f59e0b", "Urgente": "#ef4444" }}
-                        />
-                        {dataSol.por_prioridad.length === 0 && <p className="text-muted" style={{ fontSize: "13px" }}>Sin datos</p>}
+                        <div style={panelTitle}>Por Prioridad</div>
+                        {dataSol.por_prioridad.length > 0 ? (
+                            <DonutChart
+                                items={dataSol.por_prioridad.map(p => ({ label: p.prioridad, valor: p.cantidad, color: coloresPrioridad[p.prioridad] || "#6b7280" }))}
+                                centro={{ valor: dataSol.por_prioridad.reduce((s, p) => s + p.cantidad, 0), label: "servicios" }}
+                            />
+                        ) : <p className="text-muted" style={{ fontSize: "13px" }}>Sin datos</p>}
                     </div>
                 </div>
 
-                {/* Tabla de recientes */}
                 <div className="glass-panel" style={{ padding: "20px" }}>
-                    <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Solicitudes Recientes</h4>
+                    <div style={panelTitle}>Solicitudes Recientes</div>
                     <div className="table-responsive">
                         <table className="data-table">
                             <thead>
-                                <tr>
-                                    <th># Servicio</th><th>Cliente</th><th>Estado</th>
-                                    <th>Prioridad</th><th>Grúa</th><th>Chofer</th><th>Fecha</th>
-                                </tr>
+                                <tr><th># Servicio</th><th>Cliente</th><th>Estado</th><th>Prioridad</th><th>Grúa</th><th>Chofer</th><th>Fecha</th></tr>
                             </thead>
                             <tbody>
                                 {dataSol.recientes.map((s, i) => (
@@ -489,7 +564,7 @@ ${contenidoHTML}
 
         return (
             <>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px", marginBottom: "24px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "10px", marginBottom: "14px" }}>
                     <StatCard label="Total Flota" valor={resumen.total} color="var(--color-primary)" icono="truck" />
                     <StatCard label="Disponibles" valor={resumen.disponibles} color="#10b981" icono="check-circle" />
                     <StatCard label="En Servicio" valor={resumen.en_servicio} color="#3b82f6" icono="route" />
@@ -497,35 +572,39 @@ ${contenidoHTML}
                     <StatCard label="Fuera de Servicio" valor={resumen.fuera_servicio} color="#ef4444" icono="close" />
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
-                    {/* Por estado */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
                     <div className="glass-panel" style={{ padding: "20px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Estado de la Flota</h4>
-                        <BarraHorizontal
-                            items={dataFlota.por_estado.map(e => ({ label: e.estado, valor: e.cantidad }))}
-                            colorMap={coloresFlota}
+                        <div style={panelTitle}>Estado de la Flota</div>
+                        <DonutChart
+                            items={dataFlota.por_estado.map(e => ({ label: e.estado, valor: e.cantidad, color: coloresFlota[e.estado] || "#6b7280" }))}
+                            centro={{ valor: resumen.total, label: "grúas" }}
                         />
                     </div>
 
-                    {/* Por tipo */}
                     <div className="glass-panel" style={{ padding: "20px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Por Tipo de Grúa</h4>
-                        {dataFlota.por_tipo.map((t, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border-color)" }}>
-                                <span style={{ fontWeight: 500 }}>{t.tipo}</span>
-                                <div style={{ display: "flex", gap: "12px", fontSize: "13px" }}>
-                                    <span style={{ color: "var(--text-secondary)" }}>{t.cantidad} total</span>
-                                    <span style={{ color: "#10b981", fontWeight: 600 }}>{t.disponibles} disp.</span>
+                        <div style={panelTitle}>Por Tipo de Grúa</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {dataFlota.por_tipo.map((t, i) => (
+                                <div key={i} style={{
+                                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                                    padding: "10px 14px", borderRadius: "10px",
+                                    background: "rgba(255,255,255,0.04)",
+                                    border: "1px solid rgba(255,255,255,0.07)",
+                                }}>
+                                    <span style={{ fontWeight: 600, fontSize: "13px" }}>{t.tipo}</span>
+                                    <div style={{ display: "flex", gap: "14px", fontSize: "12px" }}>
+                                        <span style={{ color: "var(--text-secondary)" }}>{t.cantidad} total</span>
+                                        <span style={{ color: "#10b981", fontWeight: 700 }}>{t.disponibles} disp.</span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                {/* Combustible por camión */}
                 {dataFlota.combustible_por_camion.length > 0 && (
-                    <div className="glass-panel" style={{ padding: "20px", marginBottom: "16px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Consumo de Combustible por Camión</h4>
+                    <div className="glass-panel" style={{ padding: "20px", marginBottom: "14px" }}>
+                        <div style={panelTitle}>Consumo de Combustible por Camión</div>
                         <div className="table-responsive">
                             <table className="data-table">
                                 <thead>
@@ -548,10 +627,9 @@ ${contenidoHTML}
                     </div>
                 )}
 
-                {/* Mantenimientos recientes */}
                 {dataFlota.mantenimientos_recientes.length > 0 && (
                     <div className="glass-panel" style={{ padding: "20px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Mantenimientos Recientes</h4>
+                        <div style={panelTitle}>Mantenimientos Recientes</div>
                         <div className="table-responsive">
                             <table className="data-table">
                                 <thead>
@@ -582,58 +660,55 @@ ${contenidoHTML}
     function renderOperativo() {
         if (!dataOp) return null;
 
+        const coloresDia: Record<string, string> = {
+            "Lunes": "#3b82f6", "Martes": "#6366f1", "Miércoles": "#8b5cf6",
+            "Jueves": "#a855f7", "Viernes": "#f59e0b", "Sábado": "#f97316", "Domingo": "#ef4444",
+        };
+
         return (
             <>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
-                    {/* Rendimiento por chofer */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
+                    {/* Servicios por chofer — barras verticales */}
                     <div className="glass-panel" style={{ padding: "20px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Rendimiento por Chofer</h4>
+                        <div style={panelTitle}>Servicios por Chofer</div>
                         {dataOp.servicios_por_chofer.length > 0 ? (
-                            <div className="table-responsive">
-                                <table className="data-table">
-                                    <thead>
-                                        <tr><th>Chofer</th><th>Total</th><th>Finalizados</th><th>Cancelados</th><th>Activos</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        {dataOp.servicios_por_chofer.map((c, i) => (
-                                            <tr key={i}>
-                                                <td style={{ fontWeight: 600 }}>{c.chofer_nombre}</td>
-                                                <td>{c.total}</td>
-                                                <td style={{ color: "#10b981", fontWeight: 600 }}>{c.finalizados}</td>
-                                                <td style={{ color: "#ef4444" }}>{c.cancelados}</td>
-                                                <td><span className="badge badge-info">{c.activos}</span></td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <BarrasVerticales
+                                items={dataOp.servicios_por_chofer.map(c => ({
+                                    label: c.chofer_nombre.split(" ")[0],
+                                    barras: [{ valor: c.total, color: "var(--color-primary)" }],
+                                }))}
+                            />
                         ) : <p className="text-muted" style={{ fontSize: "13px" }}>Sin datos de choferes</p>}
                     </div>
 
-                    {/* Solicitudes por día de la semana */}
+                    {/* Solicitudes por día de la semana — barras verticales */}
                     <div className="glass-panel" style={{ padding: "20px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Solicitudes por Día de la Semana</h4>
+                        <div style={panelTitle}>Solicitudes por Día de la Semana</div>
                         {dataOp.solicitudes_por_dia_semana.length > 0 ? (
-                            <BarraHorizontal
-                                items={dataOp.solicitudes_por_dia_semana.map(d => ({ label: d.dia, valor: d.cantidad }))}
-                                colorMap={{
-                                    "Lunes": "#3b82f6", "Martes": "#6366f1", "Miércoles": "#8b5cf6",
-                                    "Jueves": "#a855f7", "Viernes": "#f59e0b", "Sábado": "#f97316", "Domingo": "#ef4444",
-                                }}
+                            <BarrasVerticales
+                                items={dataOp.solicitudes_por_dia_semana.map(d => ({
+                                    label: d.dia.slice(0, 3),
+                                    barras: [{ valor: d.cantidad, color: coloresDia[d.dia] || "#6b7280" }],
+                                }))}
                             />
                         ) : <p className="text-muted" style={{ fontSize: "13px" }}>Sin datos</p>}
                     </div>
 
                     {/* Tiempo promedio de resolución */}
                     <div className="glass-panel" style={{ padding: "20px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Tiempo Promedio de Resolución</h4>
+                        <div style={panelTitle}>Tiempo Promedio de Resolución</div>
                         {dataOp.tiempo_promedio_resolucion.length > 0 ? (
-                            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                                 {dataOp.tiempo_promedio_resolucion.map((t, i) => (
-                                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "var(--bg-subtle)", borderRadius: "8px" }}>
+                                    <div key={i} style={{
+                                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                                        padding: "10px 14px", borderRadius: "10px",
+                                        background: "rgba(255,255,255,0.04)",
+                                        border: "1px solid rgba(255,255,255,0.07)",
+                                    }}>
                                         <span style={{ fontSize: "13px", fontWeight: 500 }}>{formatMes(t.mes)}</span>
                                         <div style={{ textAlign: "right" }}>
-                                            <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-primary)" }}>{t.promedio_horas}h</span>
+                                            <span style={{ fontSize: "18px", fontWeight: 800, color: "var(--color-primary)" }}>{t.promedio_horas}h</span>
                                             <span style={{ fontSize: "11px", color: "var(--text-secondary)", marginLeft: "8px" }}>{t.total_servicios} servicios</span>
                                         </div>
                                     </div>
@@ -644,19 +719,17 @@ ${contenidoHTML}
 
                     {/* Costos mensuales */}
                     <div className="glass-panel" style={{ padding: "20px" }}>
-                        <h4 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: 600 }}>Costos Mensuales</h4>
+                        <div style={panelTitle}>Costos Mensuales</div>
                         {(dataOp.costos_mantenimiento_mensual.length > 0 || dataOp.costos_combustible_mensual.length > 0) ? (
                             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                {/* Leyenda */}
-                                <div style={{ display: "flex", gap: "16px", marginBottom: "8px", fontSize: "12px" }}>
-                                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                        <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#f59e0b", display: "inline-block" }} /> Mantenimiento
-                                    </span>
-                                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                                        <span style={{ width: "10px", height: "10px", borderRadius: "2px", background: "#3b82f6", display: "inline-block" }} /> Combustible
-                                    </span>
+                                <div style={{ display: "flex", gap: "16px", marginBottom: "4px" }}>
+                                    {[{ color: "#f59e0b", label: "Mantenimiento" }, { color: "#3b82f6", label: "Combustible" }].map((l, i) => (
+                                        <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--text-secondary)" }}>
+                                            <div style={{ width: "8px", height: "8px", borderRadius: "2px", background: l.color, boxShadow: `0 0 6px ${l.color}` }} />
+                                            {l.label}
+                                        </div>
+                                    ))}
                                 </div>
-                                {/* Unir datos por mes */}
                                 {(() => {
                                     const meses = new Set([
                                         ...dataOp.costos_mantenimiento_mensual.map(m => m.mes),
@@ -666,16 +739,20 @@ ${contenidoHTML}
                                         const mant = dataOp!.costos_mantenimiento_mensual.find(m => m.mes === mes);
                                         const comb = dataOp!.costos_combustible_mensual.find(m => m.mes === mes);
                                         return (
-                                            <div key={i} style={{ padding: "10px 12px", background: "var(--bg-subtle)", borderRadius: "8px" }}>
-                                                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "6px" }}>{formatMes(mes)}</div>
+                                            <div key={i} style={{
+                                                padding: "10px 14px", borderRadius: "10px",
+                                                background: "rgba(255,255,255,0.04)",
+                                                border: "1px solid rgba(255,255,255,0.07)",
+                                            }}>
+                                                <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "6px", fontWeight: 600 }}>{formatMes(mes)}</div>
                                                 <div style={{ display: "flex", gap: "16px" }}>
                                                     <div style={{ flex: 1 }}>
-                                                        <span style={{ fontSize: "11px", color: "#f59e0b" }}>Mant.</span>
-                                                        <div style={{ fontSize: "15px", fontWeight: 600 }}>{mant ? formatMoneda(Number(mant.total_costo)) : "—"}</div>
+                                                        <div style={{ fontSize: "10px", color: "#f59e0b", marginBottom: "2px" }}>Mant.</div>
+                                                        <div style={{ fontSize: "14px", fontWeight: 700 }}>{mant ? formatMoneda(Number(mant.total_costo)) : "—"}</div>
                                                     </div>
                                                     <div style={{ flex: 1 }}>
-                                                        <span style={{ fontSize: "11px", color: "#3b82f6" }}>Comb.</span>
-                                                        <div style={{ fontSize: "15px", fontWeight: 600 }}>{comb ? formatMoneda(Number(comb.total_costo)) : "—"}</div>
+                                                        <div style={{ fontSize: "10px", color: "#3b82f6", marginBottom: "2px" }}>Comb.</div>
+                                                        <div style={{ fontSize: "14px", fontWeight: 700 }}>{comb ? formatMoneda(Number(comb.total_costo)) : "—"}</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -697,11 +774,17 @@ ${contenidoHTML}
     const exportPDFFns: Record<TabReporte, (() => void) | null> = { solicitudes: exportarSolicitudesPDF, flota: exportarFlotaPDF, operativo: exportarOperativoPDF };
 
     return (
-        <div className="page-enter">
+        <div className="page-enter" style={{ position: "relative" }}>
+            {/* Blobs para efecto glassmorphism */}
+            <div style={{ position: "absolute", top: "-120px", right: "-80px", width: "380px", height: "380px", borderRadius: "50%", background: "var(--color-primary)", filter: "blur(90px)", opacity: 0.08, pointerEvents: "none", zIndex: 0 }} />
+            <div style={{ position: "absolute", bottom: "-60px", left: "-60px", width: "320px", height: "320px", borderRadius: "50%", background: "#3b82f6", filter: "blur(80px)", opacity: 0.07, pointerEvents: "none", zIndex: 0 }} />
+            <div style={{ position: "absolute", top: "40%", left: "30%", width: "220px", height: "220px", borderRadius: "50%", background: "#10b981", filter: "blur(80px)", opacity: 0.05, pointerEvents: "none", zIndex: 0 }} />
+
+            <div style={{ position: "relative", zIndex: 1 }}>
             {error && <div className="alert alert-error">{error}</div>}
 
             {/* Header con tabs y acciones */}
-            <div className="glass-panel" style={{ padding: "16px 20px", marginBottom: "16px" }}>
+            <div className="glass-panel" style={{ padding: "16px 20px", marginBottom: "14px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
                     <div className="tabs">
                         {(["solicitudes", "flota", "operativo"] as TabReporte[]).map(t => (
@@ -749,6 +832,7 @@ ${contenidoHTML}
                     {tab === "operativo" && renderOperativo()}
                 </>
             )}
+            </div>
         </div>
     );
 }
