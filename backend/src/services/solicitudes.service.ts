@@ -19,6 +19,7 @@ import { getPool } from '../config/database';
 export interface Solicitud {
     id: number;
     numero_servicio: string;
+    cliente_id: number;
     cliente_nombre: string;
     cliente_telefono: string;
     cliente_email: string;
@@ -43,9 +44,7 @@ export interface Solicitud {
 
 /** Datos requeridos para crear una nueva solicitud */
 export interface CrearSolicitudDTO {
-    cliente_nombre: string;
-    cliente_telefono?: string;
-    cliente_email?: string;
+    cliente_id: number;
     ubicacion_origen: string;
     ubicacion_destino?: string;
     descripcion_problema?: string;
@@ -57,9 +56,6 @@ export interface CrearSolicitudDTO {
 
 /** Datos permitidos para editar una solicitud existente */
 export interface ActualizarSolicitudDTO {
-    cliente_nombre?: string;
-    cliente_telefono?: string;
-    cliente_email?: string;
     ubicacion_origen?: string;
     ubicacion_destino?: string;
     descripcion_problema?: string;
@@ -126,7 +122,7 @@ export async function listarSolicitudes(filtroEstado?: string): Promise<Solicitu
     const result = await request.query(`
         SELECT 
             s.id, s.numero_servicio,
-            s.cliente_nombre, s.cliente_telefono, s.cliente_email,
+            s.cliente_id, s.cliente_nombre, s.cliente_telefono, s.cliente_email,
             s.ubicacion_origen, s.ubicacion_destino,
             s.descripcion_problema, s.tipo_servicio,
             s.estado, s.prioridad,
@@ -294,14 +290,26 @@ export async function obtenerSolicitudPorId(id: number): Promise<Solicitud | nul
 export async function crearSolicitud(datos: CrearSolicitudDTO): Promise<Solicitud> {
     const pool = await getPool();
 
+    // Obtener datos del cliente para el snapshot
+    const clienteResult = await pool.request()
+        .input('cliente_id', datos.cliente_id)
+        .query(`SELECT nombre, apellido, telefono, correo FROM clientes WHERE id = @cliente_id AND activo = 1`);
+
+    if (clienteResult.recordset.length === 0) {
+        throw new Error('Cliente no encontrado o inactivo.');
+    }
+    const cliente = clienteResult.recordset[0];
+    const clienteNombre = `${cliente.nombre} ${cliente.apellido}`.trim();
+
     // Generar número de servicio automático
     const numeroServicio = await generarNumeroServicio();
 
     const result = await pool.request()
         .input('numero_servicio', numeroServicio)
-        .input('cliente_nombre', datos.cliente_nombre)
-        .input('cliente_telefono', datos.cliente_telefono || null)
-        .input('cliente_email', datos.cliente_email || null)
+        .input('cliente_id', datos.cliente_id)
+        .input('cliente_nombre', clienteNombre)
+        .input('cliente_telefono', cliente.telefono || null)
+        .input('cliente_email', cliente.correo || null)
         .input('ubicacion_origen', datos.ubicacion_origen)
         .input('ubicacion_destino', datos.ubicacion_destino || null)
         .input('descripcion_problema', datos.descripcion_problema || null)
@@ -310,13 +318,13 @@ export async function crearSolicitud(datos: CrearSolicitudDTO): Promise<Solicitu
         .input('creado_por', datos.creado_por)
         .input('notas_internas', datos.notas_internas || null)
         .query(`
-            INSERT INTO solicitudes 
-                (numero_servicio, cliente_nombre, cliente_telefono, cliente_email,
+            INSERT INTO solicitudes
+                (numero_servicio, cliente_id, cliente_nombre, cliente_telefono, cliente_email,
                  ubicacion_origen, ubicacion_destino, descripcion_problema,
                  tipo_servicio, prioridad, creado_por, notas_internas)
             OUTPUT INSERTED.id
-            VALUES 
-                (@numero_servicio, @cliente_nombre, @cliente_telefono, @cliente_email,
+            VALUES
+                (@numero_servicio, @cliente_id, @cliente_nombre, @cliente_telefono, @cliente_email,
                  @ubicacion_origen, @ubicacion_destino, @descripcion_problema,
                  @tipo_servicio, @prioridad, @creado_por, @notas_internas)
         `);
@@ -573,9 +581,6 @@ export async function actualizarSolicitud(id: number, datos: ActualizarSolicitud
     const campos: string[] = [];
     const request = pool.request().input('id', id);
 
-    if (datos.cliente_nombre !== undefined) { campos.push('cliente_nombre = @cliente_nombre'); request.input('cliente_nombre', datos.cliente_nombre); }
-    if (datos.cliente_telefono !== undefined) { campos.push('cliente_telefono = @cliente_telefono'); request.input('cliente_telefono', datos.cliente_telefono || null); }
-    if (datos.cliente_email !== undefined) { campos.push('cliente_email = @cliente_email'); request.input('cliente_email', datos.cliente_email || null); }
     if (datos.ubicacion_origen !== undefined) { campos.push('ubicacion_origen = @ubicacion_origen'); request.input('ubicacion_origen', datos.ubicacion_origen); }
     if (datos.ubicacion_destino !== undefined) { campos.push('ubicacion_destino = @ubicacion_destino'); request.input('ubicacion_destino', datos.ubicacion_destino || null); }
     if (datos.descripcion_problema !== undefined) { campos.push('descripcion_problema = @descripcion_problema'); request.input('descripcion_problema', datos.descripcion_problema || null); }

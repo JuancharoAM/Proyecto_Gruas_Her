@@ -73,6 +73,7 @@ export interface Camion {
 export interface Solicitud {
     id: number;
     numero_servicio: string;
+    cliente_id: number;
     cliente_nombre: string;
     cliente_telefono: string;
     cliente_email: string;

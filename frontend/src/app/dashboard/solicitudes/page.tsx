@@ -13,9 +13,11 @@ import { useEffect, useState, useMemo } from "react";
 import {
     listarSolicitudes, crearSolicitud, actualizarSolicitud, eliminarSolicitud,
     asignarGrua, reasignarGrua, actualizarEstadoSolicitud, listarCamiones, listarUsuarios,
+    listarClientes, obtenerEvaluacionPorSolicitud,
 } from "@/lib/api";
-import { Solicitud, Camion, UsuarioCompleto } from "@/types";
+import { Solicitud, Camion, UsuarioCompleto, Cliente, Evaluacion } from "@/types";
 import Icon from "@/components/Icon";
+import StarRating from "@/components/StarRating";
 
 const ESTADOS = ["Todas", "Pendiente", "Asignada", "En camino", "Atendiendo", "Finalizada", "Cancelada"];
 
@@ -36,18 +38,27 @@ export default function SolicitudesPage() {
     // Solicitud seleccionada para editar/asignar/estado/detalle
     const [solicitudSel, setSolicitudSel] = useState<Solicitud | null>(null);
 
+    // Evaluacion del modal de detalle
+    const [evaluacionDetalle, setEvaluacionDetalle] = useState<Evaluacion | null>(null);
+    const [loadingEvaluacion, setLoadingEvaluacion] = useState(false);
+
     // Datos auxiliares
     const [camionesDisponibles, setCamionesDisponibles] = useState<Camion[]>([]);
     const [choferes, setChoferes] = useState<UsuarioCompleto[]>([]);
 
+    // Selector de cliente para modal crear
+    const [clientes, setClientes] = useState<Cliente[]>([]);
+    const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
+    const [busquedaCliente, setBusquedaCliente] = useState("");
+    const [mostrarListaClientes, setMostrarListaClientes] = useState(false);
+
     // Formularios
     const [formCrear, setFormCrear] = useState({
-        cliente_nombre: "", cliente_telefono: "", cliente_email: "",
+        cliente_id: 0,
         ubicacion_origen: "", ubicacion_destino: "",
         descripcion_problema: "", tipo_servicio: "Estándar", prioridad: "Normal", notas_internas: "",
     });
     const [formEditar, setFormEditar] = useState({
-        cliente_nombre: "", cliente_telefono: "", cliente_email: "",
         ubicacion_origen: "", ubicacion_destino: "",
         descripcion_problema: "", tipo_servicio: "", prioridad: "", notas_internas: "",
     });
@@ -87,6 +98,18 @@ export default function SolicitudesPage() {
         return () => clearInterval(intervalo);
     }, [filtroActual]);
 
+    useEffect(() => {
+        if (modalDetalle && solicitudSel?.estado === 'Finalizada') {
+            setLoadingEvaluacion(true);
+            obtenerEvaluacionPorSolicitud(solicitudSel.id)
+                .then(res => setEvaluacionDetalle(res.success && res.data ? res.data : null))
+                .catch(() => setEvaluacionDetalle(null))
+                .finally(() => setLoadingEvaluacion(false));
+        } else {
+            setEvaluacionDetalle(null);
+        }
+    }, [modalDetalle, solicitudSel]);
+
     function mostrarMensaje(texto: string) {
         setMensaje(texto);
         setTimeout(() => setMensaje(""), 3000);
@@ -94,22 +117,34 @@ export default function SolicitudesPage() {
 
     // ======================== Crear ========================
 
+    async function abrirModalCrear() {
+        setError("");
+        setClienteSeleccionado(null);
+        setBusquedaCliente("");
+        setMostrarListaClientes(false);
+        setFormCrear({ cliente_id: 0, ubicacion_origen: "", ubicacion_destino: "", descripcion_problema: "", tipo_servicio: "Estándar", prioridad: "Normal", notas_internas: "" });
+        try {
+            const res = await listarClientes();
+            if (res.success && res.data) setClientes(res.data.filter(c => c.activo));
+        } catch { /* sin acción */ }
+        setModalCrear(true);
+    }
+
     async function handleCrear() {
         setError("");
-        if (!formCrear.cliente_nombre || !formCrear.ubicacion_origen) {
-            setError("El nombre del cliente y la ubicación de origen son requeridos.");
+        if (!clienteSeleccionado) {
+            setError("Debe seleccionar un cliente registrado.");
+            return;
+        }
+        if (!formCrear.ubicacion_origen) {
+            setError("La ubicación de origen es requerida.");
             return;
         }
         try {
-            const res = await crearSolicitud(formCrear);
+            const res = await crearSolicitud({ ...formCrear, cliente_id: clienteSeleccionado.id });
             if (res.success) {
                 mostrarMensaje(res.message || "Solicitud creada exitosamente.");
                 setModalCrear(false);
-                setFormCrear({
-                    cliente_nombre: "", cliente_telefono: "", cliente_email: "",
-                    ubicacion_origen: "", ubicacion_destino: "",
-                    descripcion_problema: "", tipo_servicio: "Estándar", prioridad: "Normal", notas_internas: "",
-                });
                 cargarSolicitudes();
             } else { setError(res.message || "Error al crear solicitud."); }
         } catch { setError("Error de conexión."); }
@@ -120,9 +155,6 @@ export default function SolicitudesPage() {
     function abrirModalEditar(s: Solicitud) {
         setSolicitudSel(s);
         setFormEditar({
-            cliente_nombre: s.cliente_nombre,
-            cliente_telefono: s.cliente_telefono || "",
-            cliente_email: s.cliente_email || "",
             ubicacion_origen: s.ubicacion_origen,
             ubicacion_destino: s.ubicacion_destino || "",
             descripcion_problema: s.descripcion_problema || "",
@@ -137,8 +169,8 @@ export default function SolicitudesPage() {
     async function handleEditar() {
         if (!solicitudSel) return;
         setError("");
-        if (!formEditar.cliente_nombre || !formEditar.ubicacion_origen) {
-            setError("El nombre del cliente y la ubicación de origen son requeridos.");
+        if (!formEditar.ubicacion_origen) {
+            setError("La ubicación de origen es requerida.");
             return;
         }
         try {
@@ -348,7 +380,7 @@ export default function SolicitudesPage() {
                             </button>
                         ))}
                     </div>
-                    <button className="btn btn-primary" onClick={() => { setError(""); setModalCrear(true); }}>
+                    <button className="btn btn-primary" onClick={abrirModalCrear}>
                         <Icon name="add" size={18} /> Nueva Solicitud
                     </button>
                 </div>
@@ -435,25 +467,54 @@ export default function SolicitudesPage() {
                         </div>
                         {error && <div className="alert alert-error">{error}</div>}
 
-                        <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-                            <div className="form-group">
-                                <label className="form-label">Nombre del cliente *</label>
-                                <input className="form-input" value={formCrear.cliente_nombre}
-                                    onChange={e => setFormCrear({ ...formCrear, cliente_nombre: e.target.value })}
-                                    placeholder="Nombre completo" />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Teléfono</label>
-                                <input className="form-input" value={formCrear.cliente_telefono}
-                                    onChange={e => setFormCrear({ ...formCrear, cliente_telefono: e.target.value })}
-                                    placeholder="8888-8888" />
-                            </div>
-                        </div>
+                        {/* Selector de cliente */}
                         <div className="form-group">
-                            <label className="form-label">Correo electrónico</label>
-                            <input className="form-input" type="email" value={formCrear.cliente_email}
-                                onChange={e => setFormCrear({ ...formCrear, cliente_email: e.target.value })}
-                                placeholder="cliente@ejemplo.com" />
+                            <label className="form-label">Cliente *</label>
+                            {clienteSeleccionado ? (
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--color-primary-subtle)", border: "1px solid var(--color-primary)", borderRadius: "8px" }}>
+                                    <div>
+                                        <div style={{ fontWeight: 600, fontSize: "14px" }}>{clienteSeleccionado.nombre} {clienteSeleccionado.apellido}</div>
+                                        <div className="text-muted" style={{ fontSize: "12px" }}>{clienteSeleccionado.telefono}{clienteSeleccionado.correo ? ` · ${clienteSeleccionado.correo}` : ""}</div>
+                                    </div>
+                                    <button className="btn btn-ghost btn-sm" onClick={() => { setClienteSeleccionado(null); setBusquedaCliente(""); }}>Cambiar</button>
+                                </div>
+                            ) : (
+                                <div style={{ position: "relative" }}>
+                                    <input
+                                        className="form-input"
+                                        placeholder="Buscar por nombre, cédula o teléfono..."
+                                        value={busquedaCliente}
+                                        onChange={e => { setBusquedaCliente(e.target.value); setMostrarListaClientes(true); }}
+                                        onFocus={() => setMostrarListaClientes(true)}
+                                        autoComplete="off"
+                                    />
+                                    {mostrarListaClientes && busquedaCliente.length > 0 && (
+                                        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 200, background: "var(--bg-surface)", border: "1px solid var(--border-color)", borderRadius: "8px", marginTop: "4px", maxHeight: "200px", overflowY: "auto", boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}>
+                                            {clientes
+                                                .filter(c => {
+                                                    const q = busquedaCliente.toLowerCase();
+                                                    return `${c.nombre} ${c.apellido}`.toLowerCase().includes(q) || c.cedula.includes(q) || c.telefono.includes(q);
+                                                })
+                                                .map(c => (
+                                                    <button
+                                                        key={c.id}
+                                                        style={{ width: "100%", textAlign: "left", padding: "10px 14px", background: "transparent", border: "none", borderBottom: "1px solid var(--border-subtle)", cursor: "pointer", display: "block" }}
+                                                        onMouseDown={() => { setClienteSeleccionado(c); setBusquedaCliente(""); setMostrarListaClientes(false); }}
+                                                    >
+                                                        <div style={{ fontWeight: 600, fontSize: "13px" }}>{c.nombre} {c.apellido}</div>
+                                                        <div className="text-muted" style={{ fontSize: "11px" }}>CI: {c.cedula} · {c.telefono}</div>
+                                                    </button>
+                                                ))}
+                                            {clientes.filter(c => {
+                                                const q = busquedaCliente.toLowerCase();
+                                                return `${c.nombre} ${c.apellido}`.toLowerCase().includes(q) || c.cedula.includes(q) || c.telefono.includes(q);
+                                            }).length === 0 && (
+                                                <div className="text-muted" style={{ padding: "12px 14px", fontSize: "13px" }}>Sin resultados.</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
                             <div className="form-group">
@@ -524,23 +585,15 @@ export default function SolicitudesPage() {
                         </div>
                         {error && <div className="alert alert-error">{error}</div>}
 
-                        <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-                            <div className="form-group">
-                                <label className="form-label">Nombre del cliente *</label>
-                                <input className="form-input" value={formEditar.cliente_nombre}
-                                    onChange={e => setFormEditar({ ...formEditar, cliente_nombre: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Teléfono</label>
-                                <input className="form-input" value={formEditar.cliente_telefono}
-                                    onChange={e => setFormEditar({ ...formEditar, cliente_telefono: e.target.value })} />
-                            </div>
-                        </div>
+                        {/* Cliente fijo — no editable */}
                         <div className="form-group">
-                            <label className="form-label">Correo electrónico</label>
-                            <input className="form-input" type="email" value={formEditar.cliente_email}
-                                onChange={e => setFormEditar({ ...formEditar, cliente_email: e.target.value })} />
+                            <label className="form-label">Cliente</label>
+                            <div style={{ padding: "10px 14px", background: "var(--bg-subtle)", border: "1px solid var(--border-color)", borderRadius: "8px", fontSize: "14px" }}>
+                                <span style={{ fontWeight: 600 }}>{solicitudSel.cliente_nombre}</span>
+                                {solicitudSel.cliente_telefono && <span className="text-muted"> · {solicitudSel.cliente_telefono}</span>}
+                            </div>
                         </div>
+
                         <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
                             <div className="form-group">
                                 <label className="form-label">Ubicación de origen *</label>
@@ -888,6 +941,34 @@ export default function SolicitudesPage() {
                         {solicitudSel.notas_internas && (
                             <div style={{ marginTop: "12px", padding: "10px", background: "var(--color-warning-subtle)", borderRadius: "8px", fontSize: "13px" }}>
                                 <strong>Notas internas:</strong> {solicitudSel.notas_internas}
+                            </div>
+                        )}
+
+                        {solicitudSel.estado === 'Finalizada' && (
+                            <div style={{ marginTop: "16px", padding: "14px", background: "var(--bg-subtle)", borderRadius: "8px" }}>
+                                <div style={{ fontSize: "12px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "10px" }}>
+                                    Evaluación del servicio
+                                </div>
+                                {loadingEvaluacion ? (
+                                    <span className="text-muted" style={{ fontSize: "13px" }}>Cargando evaluación...</span>
+                                ) : evaluacionDetalle ? (
+                                    <div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                                            <StarRating value={evaluacionDetalle.calificacion} readonly size={20} />
+                                            <span style={{ fontSize: "13px", fontWeight: 600 }}>{evaluacionDetalle.calificacion}/5</span>
+                                        </div>
+                                        {evaluacionDetalle.comentario && (
+                                            <div style={{ fontSize: "13px", fontStyle: "italic", marginBottom: "6px" }}>
+                                                "{evaluacionDetalle.comentario}"
+                                            </div>
+                                        )}
+                                        <div className="text-muted" style={{ fontSize: "12px" }}>
+                                            Por {evaluacionDetalle.cliente_nombre} · {new Date(evaluacionDetalle.fecha_creacion).toLocaleDateString("es-CR")}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <span className="text-muted" style={{ fontSize: "13px" }}>Sin evaluación registrada.</span>
+                                )}
                             </div>
                         )}
 

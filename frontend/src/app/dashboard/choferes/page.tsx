@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState, useMemo } from "react";
-import { UsuarioCompleto, Solicitud, Camion } from "@/types";
+import { UsuarioCompleto, Solicitud, Camion, Evaluacion } from "@/types";
 import {
     listarUsuarios,
     listarSolicitudes,
@@ -23,8 +23,10 @@ import {
     desactivarUsuario,
     activarUsuario,
     actualizarEstadoSolicitud,
+    obtenerEvaluacionPorSolicitud,
 } from "@/lib/api";
 import Icon from "@/components/Icon";
+import StarRating from "@/components/StarRating";
 
 /** Pestanas disponibles en la pagina */
 type TabActiva = "choferes" | "servicios";
@@ -825,6 +827,45 @@ export default function ChoferesAdminPage() {
 // ============================================================================
 
 /**
+ * Muestra la evaluacion de un servicio finalizado de forma compacta.
+ * Carga la evaluacion al montarse; si no existe muestra un texto muted.
+ */
+function EvaluacionInline({ solicitudId }: { solicitudId: number }) {
+    const [evaluacion, setEvaluacion] = useState<Evaluacion | null | undefined>(undefined);
+
+    useEffect(() => {
+        obtenerEvaluacionPorSolicitud(solicitudId)
+            .then(res => setEvaluacion(res.success && res.data ? res.data : null))
+            .catch(() => setEvaluacion(null));
+    }, [solicitudId]);
+
+    if (evaluacion === undefined) return null;
+
+    return (
+        <div style={{ marginTop: "12px", padding: "10px 12px", background: "var(--bg-subtle)", borderRadius: "8px" }}>
+            <div style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "6px" }}>
+                Evaluación
+            </div>
+            {evaluacion ? (
+                <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                        <StarRating value={evaluacion.calificacion} readonly size={16} />
+                        <span style={{ fontSize: "13px", fontWeight: 600 }}>{evaluacion.calificacion}/5</span>
+                    </div>
+                    {evaluacion.comentario && (
+                        <div className="text-muted" style={{ fontSize: "12px", fontStyle: "italic" }}>
+                            "{evaluacion.comentario.length > 60 ? evaluacion.comentario.slice(0, 60) + "…" : evaluacion.comentario}"
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <span className="text-muted" style={{ fontSize: "12px" }}>Sin evaluación registrada.</span>
+            )}
+        </div>
+    );
+}
+
+/**
  * Tarjeta de servicio con detalles expandidos y botones de sobrescritura
  * administrativa. Muestra informacion del cliente, grua, ubicaciones, fechas
  * relevantes y permite forzar cambios de estado en el flujo del servicio.
@@ -920,6 +961,11 @@ function ServicioAdminCard({
                     </div>
                 )}
             </div>
+
+            {/* Evaluacion (solo servicios finalizados) */}
+            {servicio.estado === 'Finalizada' && (
+                <EvaluacionInline solicitudId={servicio.id} />
+            )}
 
             {/* Acciones de sobrescritura administrativa (solo para servicios no finalizados) */}
             {!esFinalizado && (

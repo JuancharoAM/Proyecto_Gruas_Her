@@ -9,6 +9,7 @@
  */
 
 import { Request, Response } from 'express';
+import { getPool } from '../config/database';
 import * as solicitudesService from '../services/solicitudes.service';
 import * as notificacionesService from '../services/notificaciones.service';
 
@@ -87,17 +88,15 @@ export async function obtenerPorId(req: Request, res: Response): Promise<void> {
  */
 export async function crear(req: Request, res: Response): Promise<void> {
     try {
-        const { cliente_nombre, ubicacion_origen } = req.body;
+        const { ubicacion_origen } = req.body;
+        let { cliente_id } = req.body;
 
-        if (!cliente_nombre || !ubicacion_origen) {
-            res.status(400).json({
-                success: false,
-                message: 'Los campos cliente_nombre y ubicacion_origen son requeridos.',
-            });
+        if (!ubicacion_origen) {
+            res.status(400).json({ success: false, message: 'La ubicación de origen es requerida.' });
             return;
         }
 
-        // Si es un cliente, validar que no tenga una solicitud activa
+        // Para el rol Cliente: resolver cliente_id automáticamente desde su usuario
         if (req.user!.rol === 'Cliente') {
             const tieneActiva = await solicitudesService.clienteTieneSolicitudActiva(req.user!.userId);
             if (tieneActiva) {
@@ -107,11 +106,25 @@ export async function crear(req: Request, res: Response): Promise<void> {
                 });
                 return;
             }
+            const pool = await getPool();
+            const r = await pool.request()
+                .input('usuarioId', req.user!.userId)
+                .query('SELECT id FROM clientes WHERE usuario_id = @usuarioId AND activo = 1');
+            if (r.recordset.length === 0) {
+                res.status(400).json({ success: false, message: 'No se encontró un perfil de cliente activo para este usuario.' });
+                return;
+            }
+            cliente_id = r.recordset[0].id;
         }
 
-        // Agregar el ID del usuario que crea la solicitud
+        if (!cliente_id) {
+            res.status(400).json({ success: false, message: 'Debe seleccionar un cliente registrado.' });
+            return;
+        }
+
         const datos = {
             ...req.body,
+            cliente_id,
             creado_por: req.user!.userId,
         };
 

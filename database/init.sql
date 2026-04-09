@@ -144,10 +144,11 @@ BEGIN
     CREATE TABLE solicitudes (
         id                    INT PRIMARY KEY IDENTITY(1,1),    -- Identificador único
         numero_servicio       VARCHAR(20) NOT NULL UNIQUE,       -- Código único del servicio (ej: 'SRV-2026-0001')
-        -- Datos del cliente
-        cliente_nombre        VARCHAR(100) NOT NULL,             -- Nombre del cliente
-        cliente_telefono      VARCHAR(20),                       -- Teléfono de contacto
-        cliente_email         VARCHAR(100),                      -- Email del cliente (opcional)
+        -- Referencia y snapshot del cliente
+        cliente_id            INT NOT NULL,                      -- FK al cliente registrado
+        cliente_nombre        VARCHAR(100) NOT NULL,             -- Snapshot: nombre al momento de crear
+        cliente_telefono      VARCHAR(20),                       -- Snapshot: teléfono al momento de crear
+        cliente_email         VARCHAR(100),                      -- Snapshot: email al momento de crear
         -- Datos de ubicación
         ubicacion_origen      VARCHAR(200) NOT NULL,             -- Dirección de origen (dónde recoger)
         ubicacion_destino     VARCHAR(200),                      -- Dirección de destino (dónde llevar)
@@ -167,18 +168,11 @@ BEGIN
         -- Auditoría
         creado_por            INT NOT NULL,                      -- FK al usuario que registró la solicitud
         notas_internas        TEXT NULL,                         -- Notas internas del equipo
+        CONSTRAINT FK_solicitudes_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id),
         CONSTRAINT FK_solicitudes_camion FOREIGN KEY (camion_id) REFERENCES camiones(id),
         CONSTRAINT FK_solicitudes_chofer FOREIGN KEY (chofer_id) REFERENCES usuarios(id),
         CONSTRAINT FK_solicitudes_creador FOREIGN KEY (creado_por) REFERENCES usuarios(id)
     );
-END
-GO
-
--- Agregar columna cliente_id a solicitudes (para vincular con la tabla clientes)
-IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('solicitudes') AND name = 'cliente_id')
-BEGIN
-    ALTER TABLE solicitudes ADD cliente_id INT NULL;
-    ALTER TABLE solicitudes ADD CONSTRAINT FK_solicitudes_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id);
 END
 GO
 

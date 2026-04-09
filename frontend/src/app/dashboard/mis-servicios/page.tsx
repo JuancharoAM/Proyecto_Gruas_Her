@@ -5,11 +5,14 @@ import { Solicitud } from "@/types";
 import { listarMisServicios, actualizarEstadoSolicitud, reportarUbicacion } from "@/lib/api";
 import Icon from "@/components/Icon";
 
+type GpsEstado = 'inactivo' | 'activo' | 'denegado' | 'no-disponible';
+
 export default function MisServiciosPage() {
     const [servicios, setServicios] = useState<Solicitud[]>([]);
     const [loading, setLoading] = useState(true);
     const [filtro, setFiltro] = useState<"Activos" | "Finalizados">("Activos");
     const [submittingId, setSubmittingId] = useState<number | null>(null);
+    const [gpsEstado, setGpsEstado] = useState<GpsEstado>('inactivo');
 
     useEffect(() => {
         cargarServicios();
@@ -22,21 +25,37 @@ export default function MisServiciosPage() {
         const activo = servicios.find(s =>
             s.estado === 'En camino' || s.estado === 'Atendiendo'
         );
-        if (!activo || !activo.camion_id) return;
+
+        if (!activo || !activo.camion_id) {
+            setGpsEstado('inactivo');
+            return;
+        }
+
+        if (!('geolocation' in navigator)) {
+            setGpsEstado('no-disponible');
+            return;
+        }
 
         const camionId = activo.camion_id;
 
         const reportar = () => {
-            if (!('geolocation' in navigator)) return;
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
+                    setGpsEstado('activo');
                     reportarUbicacion({
                         camion_id: camionId,
                         latitud: pos.coords.latitude,
                         longitud: pos.coords.longitude,
                     }).catch(() => {});
                 },
-                () => {} // Silencioso si el usuario deniega el permiso
+                (err) => {
+                    if (err.code === err.PERMISSION_DENIED) {
+                        setGpsEstado('denegado');
+                    } else {
+                        setGpsEstado('no-disponible');
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
             );
         };
 
@@ -89,6 +108,23 @@ export default function MisServiciosPage() {
 
     return (
         <div className="page-enter">
+            {/* Banner de estado GPS */}
+            {gpsEstado === 'activo' && (
+                <div style={{ background: "var(--color-success-subtle)", border: "1px solid var(--color-success)", borderRadius: "8px", padding: "10px 16px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--color-success)" }}>
+                    <Icon name="location" size={16} /> Ubicación GPS activa — reportando cada 10 segundos.
+                </div>
+            )}
+            {gpsEstado === 'denegado' && (
+                <div style={{ background: "var(--color-danger-subtle)", border: "1px solid var(--color-danger)", borderRadius: "8px", padding: "10px 16px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--color-danger)" }}>
+                    <Icon name="location" size={16} /> Permiso de ubicación denegado. Ve a los ajustes del navegador y habilita el acceso a la ubicación para esta página.
+                </div>
+            )}
+{gpsEstado === 'no-disponible' && (
+                <div style={{ background: "var(--color-warning-subtle)", border: "1px solid var(--color-warning)", borderRadius: "8px", padding: "10px 16px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--color-warning)" }}>
+                    <Icon name="location" size={16} /> GPS no disponible en este dispositivo o navegador.
+                </div>
+            )}
+
             {/* Cabecera / Filtros  */}
             <div className="glass-panel mb-2" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
                 <h3 className="panel-title" style={{ margin: 0 }}>Mis Servicios Asignados</h3>

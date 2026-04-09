@@ -20,6 +20,7 @@ export default function DashboardPage() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [ubicaciones, setUbicaciones] = useState<UbicacionActiva[]>([]);
+    const [seleccionadoDash, setSeleccionadoDash] = useState<number | null>(null);
 
     async function cargarDatos(silencioso = false) {
         try {
@@ -53,7 +54,7 @@ export default function DashboardPage() {
         cargarDatos();
         cargarUbicaciones();
         const intervaloStats = setInterval(() => cargarDatos(true), 15000);
-        const intervaloMapa = setInterval(cargarUbicaciones, 30000);
+        const intervaloMapa = setInterval(cargarUbicaciones, 10000);
         return () => {
             clearInterval(intervaloStats);
             clearInterval(intervaloMapa);
@@ -123,16 +124,55 @@ export default function DashboardPage() {
 
             {/* Fila central: Mapa GPS (60%) + Solicitudes Recientes (40%) */}
             <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: "16px", marginBottom: "16px" }}>
-                {/* Mapa GPS */}
-                <div className="glass-panel" style={{ height: "420px", padding: 0, overflow: "hidden" }}>
+                {/* Mapa GPS con overlay de accesos rápidos */}
+                <div className="glass-panel" style={{ height: "420px", padding: 0, overflow: "hidden", position: "relative" }}>
                     {ubicaciones.length === 0 ? (
                         <div className="text-center text-muted" style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "10px" }}>
                             <Icon name="map" size={40} />
                             <p style={{ margin: 0 }}>No hay grúas activas en este momento.</p>
-                            <p style={{ margin: 0, fontSize: "13px" }}>Se actualiza cada 30 segundos.</p>
+                            <p style={{ margin: 0, fontSize: "13px" }}>Se actualiza cada 10 segundos.</p>
                         </div>
                     ) : (
-                        <MapaGPS ubicaciones={ubicaciones} />
+                        <>
+                            <MapaGPS ubicaciones={ubicaciones} seleccionado={seleccionadoDash} />
+                            {/* Overlay de accesos rápidos */}
+                            <div style={{
+                                position: "absolute", top: "10px", right: "10px", zIndex: 1000,
+                                display: "flex", flexDirection: "column", gap: "6px",
+                                maxHeight: "390px", overflowY: "auto",
+                            }}>
+                                {ubicaciones.map((u) => {
+                                    const activo = seleccionadoDash === u.camion_id;
+                                    return (
+                                        <button
+                                            key={u.camion_id}
+                                            onClick={() => setSeleccionadoDash(prev => prev === u.camion_id ? null : u.camion_id)}
+                                            style={{
+                                                display: "flex", alignItems: "center", gap: "7px",
+                                                padding: "7px 10px",
+                                                background: activo ? "var(--color-primary)" : "var(--glass-bg)",
+                                                backdropFilter: "blur(8px)",
+                                                WebkitBackdropFilter: "blur(8px)",
+                                                border: `1px solid ${activo ? "var(--color-primary)" : "var(--glass-border)"}`,
+                                                borderRadius: "8px",
+                                                cursor: "pointer",
+                                                color: activo ? "#fff" : "var(--text-primary)",
+                                                fontSize: "12px", fontWeight: 600,
+                                                whiteSpace: "nowrap",
+                                                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                                transition: "all 0.15s ease",
+                                            }}
+                                        >
+                                            <Icon name="truck" size={13} />
+                                            <span>{u.placa}</span>
+                                            <span style={{ fontWeight: 400, opacity: 0.8, fontSize: "11px" }}>
+                                                {u.chofer_nombre.split(" ")[0]}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </>
                     )}
                 </div>
 
