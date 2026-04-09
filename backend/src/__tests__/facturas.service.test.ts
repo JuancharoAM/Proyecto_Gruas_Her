@@ -56,7 +56,7 @@ describe('facturas.service — crearFactura', () => {
     });
 
     it('lanza error si la solicitud no existe', async () => {
-        // Primera query: buscar solicitud → no encontrada
+        // Primera query: buscar solicitud > no encontrada
         mockQuery.mockResolvedValueOnce({ recordset: [] });
 
         await expect(

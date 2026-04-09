@@ -314,14 +314,14 @@ export async function actualizarEstado(req: Request, res: Response): Promise<voi
         try {
             // Notificar a admins y logistica del cambio
             await notificacionesService.crearParaRol('Administrador', {
-                titulo: `${solicitud.numero_servicio} → ${estado}`,
+                titulo: `${solicitud.numero_servicio} > ${estado}`,
                 mensaje: `La solicitud ${solicitud.numero_servicio} cambio a estado "${estado}". Cliente: ${solicitud.cliente_nombre}.`,
                 tipo: 'estado',
                 referencia_tipo: 'solicitud',
                 referencia_id: solicitud.id,
             });
             await notificacionesService.crearParaRol('Logística', {
-                titulo: `${solicitud.numero_servicio} → ${estado}`,
+                titulo: `${solicitud.numero_servicio} > ${estado}`,
                 mensaje: `La solicitud ${solicitud.numero_servicio} cambio a estado "${estado}". Cliente: ${solicitud.cliente_nombre}.`,
                 tipo: 'estado',
                 referencia_tipo: 'solicitud',
@@ -331,7 +331,7 @@ export async function actualizarEstado(req: Request, res: Response): Promise<voi
             if (solicitud.chofer_id && solicitud.chofer_id !== userId) {
                 await notificacionesService.crearNotificacion({
                     usuario_id: solicitud.chofer_id,
-                    titulo: `${solicitud.numero_servicio} → ${estado}`,
+                    titulo: `${solicitud.numero_servicio} > ${estado}`,
                     mensaje: `Tu servicio ${solicitud.numero_servicio} cambio a estado "${estado}".`,
                     tipo: 'estado',
                     referencia_tipo: 'solicitud',

@@ -172,7 +172,7 @@ export default function ChoferesAdminPage() {
 
     // ======================== Utilidades ========================
 
-    /** Mapa de camion_id → nombre del chofer al que está asignado (excluyendo el chofer que se edita) */
+    /** Mapa de camion_id > nombre del chofer al que está asignado (excluyendo el chofer que se edita) */
     const camionAsignadoA = useMemo(() => {
         const mapa: Record<number, string> = {};
         camiones.forEach(c => {
@@ -941,7 +941,7 @@ function ServicioAdminCard({
                     <div className="text-muted">Ubicación</div>
                     <div style={{ fontWeight: 500, color: "var(--color-primary)" }}>
                         {servicio.ubicacion_origen}
-                        {servicio.ubicacion_destino && ` → ${servicio.ubicacion_destino}`}
+                        {servicio.ubicacion_destino && ` > ${servicio.ubicacion_destino}`}
                     </div>
                 </div>
                 {servicio.descripcion_problema && (

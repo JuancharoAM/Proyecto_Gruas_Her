@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { UbicacionActiva } from "@/types";
+import Icon from "@/components/Icon";
 
 // Fix: Next.js/webpack rompe las URLs de los íconos por defecto de Leaflet.
 function fixLeafletIcons() {
@@ -70,14 +71,26 @@ export default function MapaGPS({ ubicaciones, seleccionado = null }: MapaGPSPro
                     ref={(ref) => { if (ref) markerRefs.current[u.camion_id] = ref; }}
                 >
                     <Popup>
-                        <div style={{ lineHeight: "1.6", minWidth: "160px" }}>
-                            <strong style={{ fontSize: "14px" }}>🚛 {u.placa}</strong><br />
-                            <span>👤 {u.chofer_nombre}</span><br />
-                            <span>📋 {u.numero_servicio}</span><br />
-                            <span>👥 {u.cliente_nombre}</span><br />
-                            <span style={{ fontSize: "11px", color: "#888" }}>
+                        <div style={{ lineHeight: "1.8", minWidth: "180px", padding: "4px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                                <Icon name="truck" size={18} />
+                                <strong style={{ fontSize: "14px" }}>{u.placa}</strong>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <Icon name="driver" size={14} className="text-muted" />
+                                <span>{u.chofer_nombre}</span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <Icon name="solicitudes" size={14} className="text-muted" />
+                                <span>{u.numero_servicio}</span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                                <Icon name="contact" size={14} className="text-muted" />
+                                <span>{u.cliente_nombre}</span>
+                            </div>
+                            <div style={{ fontSize: "11px", color: "var(--text-muted, #888)", borderTop: "1px solid #eee", paddingTop: "4px" }}>
                                 Actualizado: {new Date(u.fecha_reporte).toLocaleTimeString("es-CR")}
-                            </span>
+                            </div>
                         </div>
                     </Popup>
                 </Marker>

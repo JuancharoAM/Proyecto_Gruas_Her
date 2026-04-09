@@ -7,8 +7,8 @@
  * Incluye: listar, crear, completar, eliminar, obtener por camion y resumen.
  *
  * Flujo de estados:
- *   Crear mantenimiento → camion pasa a estado 'Mantenimiento'
- *   Completar mantenimiento → camion vuelve a estado 'Disponible'
+ *   Crear mantenimiento > camion pasa a estado 'Mantenimiento'
+ *   Completar mantenimiento > camion vuelve a estado 'Disponible'
  * ============================================================================
  */
 

@@ -8,8 +8,8 @@
  * y obtener estadísticas para el dashboard.
  * 
  * Ciclo de vida de una solicitud:
- * Pendiente → Asignada → En camino → Atendiendo → Finalizada
- *                                              └→ Cancelada (en cualquier momento)
+ * Pendiente > Asignada > En camino > Atendiendo > Finalizada
+ *                                              └> Cancelada (en cualquier momento)
  * ============================================================================
  */
 

@@ -221,7 +221,7 @@ export default function SolicitudesPage() {
         return mapa;
     }, [camionesDisponibles]);
 
-    /** Mapa de chofer_id → estado del servicio activo (si tiene uno no finalizado/cancelado) */
+    /** Mapa de chofer_id > estado del servicio activo (si tiene uno no finalizado/cancelado) */
     const choferOcupado = useMemo(() => {
         const mapa: Record<number, string> = {};
         solicitudes.forEach(s => {

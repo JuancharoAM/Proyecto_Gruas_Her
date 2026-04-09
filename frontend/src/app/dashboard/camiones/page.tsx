@@ -42,7 +42,7 @@ export default function CamionesPage() {
 
     useEffect(() => { cargarDatos(); }, []);
 
-    /** Mapa de chofer_id → placa del camión al que ya está asignado (excluyendo el que se edita) */
+    /** Mapa de chofer_id > placa del camión al que ya está asignado (excluyendo el que se edita) */
     const choferAsignadoA = useMemo(() => {
         const mapa: Record<number, string> = {};
         camiones.forEach(c => {
