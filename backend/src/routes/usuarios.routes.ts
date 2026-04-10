@@ -14,29 +14,28 @@ import { roleCheck } from '../middleware/roleCheck';
 
 const router = Router();
 
-// Todas las rutas de usuarios requieren autenticación y rol de Administrador
+// Todas las rutas requieren autenticación
 router.use(authMiddleware);
-router.use(roleCheck(['Administrador']));
 
 // GET /api/usuarios/roles - Listar roles disponibles (debe ir antes de /:id)
-router.get('/roles', usuariosController.listarRoles);
+router.get('/roles', roleCheck(['Administrador', 'Logística']), usuariosController.listarRoles);
 
-// GET /api/usuarios - Listar todos los usuarios
-router.get('/', usuariosController.listar);
+// GET /api/usuarios - Listar todos los usuarios (Logística necesita ver los choferes)
+router.get('/', roleCheck(['Administrador', 'Logística']), usuariosController.listar);
 
 // GET /api/usuarios/:id - Obtener usuario por ID
-router.get('/:id', usuariosController.obtenerPorId);
+router.get('/:id', roleCheck(['Administrador', 'Logística']), usuariosController.obtenerPorId);
 
 // POST /api/usuarios - Crear nuevo usuario
-router.post('/', usuariosController.crear);
+router.post('/', roleCheck(['Administrador']), usuariosController.crear);
 
 // POST /api/usuarios/choferes - Crear nuevo chofer directamente
-router.post('/choferes', usuariosController.crearChofer);
+router.post('/choferes', roleCheck(['Administrador', 'Logística']), usuariosController.crearChofer);
 
 // PUT /api/usuarios/:id - Actualizar usuario
-router.put('/:id', usuariosController.actualizar);
+router.put('/:id', roleCheck(['Administrador']), usuariosController.actualizar);
 
 // DELETE /api/usuarios/:id - Desactivar usuario (borrado lógico)
-router.delete('/:id', usuariosController.desactivar);
+router.delete('/:id', roleCheck(['Administrador']), usuariosController.desactivar);
 
 export default router;
