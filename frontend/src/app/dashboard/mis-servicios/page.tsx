@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Solicitud } from "@/types";
-import { listarMisServicios, actualizarEstadoSolicitud, reportarUbicacion } from "@/lib/api";
+import { Solicitud, Evaluacion } from "@/types";
+import { listarMisServicios, actualizarEstadoSolicitud, reportarUbicacion, obtenerEvaluacionPorSolicitud } from "@/lib/api";
 import Icon from "@/components/Icon";
+import StarRating from "@/components/StarRating";
 
 type GpsEstado = 'inactivo' | 'activo' | 'denegado' | 'no-disponible';
 
@@ -166,18 +167,28 @@ export default function MisServiciosPage() {
     );
 }
 
-/** 
+/**
  * Componente de Tarjeta individual para cada servicio refactorizada bajo el estándar global
  */
-function ServicioCard({ 
-    servicio, 
-    onActualizar, 
-    isSubmitting 
-}: { 
-    servicio: Solicitud, 
+function ServicioCard({
+    servicio,
+    onActualizar,
+    isSubmitting
+}: {
+    servicio: Solicitud,
     onActualizar: (id: number, estado: string) => void,
     isSubmitting: boolean
 }) {
+    const [evaluacion, setEvaluacion] = useState<Evaluacion | null>(null);
+
+    // Cargar evaluación solo para servicios finalizados
+    useEffect(() => {
+        if (servicio.estado !== "Finalizada") return;
+        obtenerEvaluacionPorSolicitud(servicio.id)
+            .then(res => { if (res.success && res.data) setEvaluacion(res.data); })
+            .catch(() => {});
+    }, [servicio.id, servicio.estado]);
+
     let badgeClass = "badge-asignada";
     let statusIcon = "clock";
     if (servicio.estado === "En camino") { badgeClass = "badge-info"; statusIcon = "route"; }
@@ -272,8 +283,44 @@ function ServicioCard({
                 )}
 
                 {servicio.estado === "Finalizada" && (
-                    <div className="text-center text-muted" style={{ padding: "10px", backgroundColor: "var(--bg-subtle)", borderRadius: "8px" }}>
-                        <Icon name="check-circle" size={16} /> Completado el {new Date(servicio.fecha_finalizacion!).toLocaleDateString("es-CR")}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {/* Fecha de completado */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 14px", backgroundColor: "var(--bg-subtle)", borderRadius: "8px", fontSize: "13px", color: "var(--text-secondary)" }}>
+                            <Icon name="check-circle" size={16} />
+                            Completado el {new Date(servicio.fecha_finalizacion!).toLocaleDateString("es-CR", { day: "2-digit", month: "long", year: "numeric" })}
+                        </div>
+
+                        {/* Evaluación del cliente */}
+                        {evaluacion ? (
+                            <div style={{ padding: "14px 16px", border: "1px solid var(--border-color)", borderRadius: "10px", background: "var(--bg-surface)" }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                                    <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
+                                        Evaluación del cliente
+                                    </span>
+                                    <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                                        {new Date(evaluacion.fecha_creacion).toLocaleDateString("es-CR")}
+                                    </span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: evaluacion.comentario ? "10px" : 0 }}>
+                                    <StarRating value={evaluacion.calificacion} readonly size={22} />
+                                    <span style={{ fontSize: "15px", fontWeight: 700, color: "#f5a623" }}>
+                                        {evaluacion.calificacion}/5
+                                    </span>
+                                    <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                                        por {evaluacion.cliente_nombre}
+                                    </span>
+                                </div>
+                                {evaluacion.comentario && (
+                                    <div style={{ fontSize: "13px", color: "var(--text-secondary)", fontStyle: "italic", padding: "8px 12px", background: "var(--bg-subtle)", borderRadius: "6px", borderLeft: "3px solid #f5a623" }}>
+                                        "{evaluacion.comentario}"
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div style={{ padding: "10px 14px", border: "1px dashed var(--border-color)", borderRadius: "8px", fontSize: "13px", color: "var(--text-secondary)", textAlign: "center" }}>
+                                Sin evaluación aún
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
